@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgrouting/pgrouting:15-3.4-3.4.1
+    container_name: sppg_gis_db_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sppg_gis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sppg_gis_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/sppg_gis_db
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

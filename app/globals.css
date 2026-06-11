@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F8F3EE;
+  --foreground: #1C322D;
+  --primary: #EBB552;
+  --secondary: #1C322D;
+  --accent: #F1CDBE;
+  --surface: #FFFFFF;
+  --border: #1C322D;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-border-custom: var(--border);
+  
+  --font-sans: var(--font-inter), sans-serif;
+  --font-serif: var(--font-playfair), serif;
+  --font-mono: var(--font-mono), monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(28, 50, 45, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(235, 181, 82, 0.4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(235, 181, 82, 0.6);
+}
+
+/* Leaflet elements matching light surface and deep forest backgrounds */
+.leaflet-popup-content-wrapper {
+  background: #F8F3EE !important;
+  color: #1C322D !important;
+  border: 1px solid #1C322D !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2) !important;
+}
+
+.leaflet-popup-tip {
+  background: #F8F3EE !important;
+  border: 1px solid #1C322D !important;
+}
+
+.leaflet-popup-close-button {
+  color: #1C322D !important;
+  padding: 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #EBB552 !important;
+}
+
+.leaflet-bar {
+  border: 1px solid #1C322D !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.leaflet-bar a {
+  background-color: #F8F3EE !important;
+  color: #1C322D !important;
+  border-bottom: 1px solid #1C322D !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #F1CDBE !important;
+}
+
+.custom-school-icon, .custom-sppg-icon, .custom-rekomendasi-icon {
+  border: none;
+  background: none;
+}
