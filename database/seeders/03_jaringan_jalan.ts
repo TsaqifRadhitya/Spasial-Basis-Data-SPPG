@@ -13,7 +13,7 @@ export async function seed(client: PoolClient) {
       VALUES (
         $1::bigint,
         COALESCE(
-          CASE WHEN $2 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($2, 'hex')) ELSE NULL END,
+          CASE WHEN $2 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($2, 'hex'), 4326) ELSE NULL END,
           ST_GeomFromText($2, 4326)
         )
       )
@@ -49,7 +49,7 @@ export async function seed(client: PoolClient) {
   let topologyBuilt = false;
   try {
     await client.query(`
-      SELECT pgr_createTopology('jaringan_jalan', 0.00001, 'geom', 'id');
+      SELECT pgr_createTopology('jaringan_jalan', 0.0001, 'geom', 'id');
     `);
     const check = await client.query(`
       SELECT COUNT(*) FROM jaringan_jalan WHERE source IS NOT NULL AND target IS NOT NULL
@@ -65,32 +65,99 @@ export async function seed(client: PoolClient) {
     console.warn('[seeder] 03 - pgr_createTopology failed:', err.message);
   }
 
-  // Step 5: CTE fallback (fast ST_Equals bulk approach)
+  // Step 5: Fast temp table fallback topology assignment
   if (!topologyBuilt) {
-    console.log('[seeder] 03 - Running CTE topology fallback...');
+    console.log('[seeder] 03 - Running fast temp table topology fallback...');
     try {
       await client.query(`
-        WITH vertices AS (
+        CREATE TEMP TABLE temp_nodes (
+          node_id SERIAL PRIMARY KEY,
+          geom GEOMETRY NOT NULL
+        );
+      `);
+
+      await client.query(`
+        WITH normalized_geom AS (
           SELECT id,
-            ST_StartPoint(ST_LineMerge(geom)) AS start_pt,
-            ST_EndPoint(ST_LineMerge(geom))   AS end_pt
+            ST_LineMerge(geom) AS merged_geom
           FROM jaringan_jalan
           WHERE geom IS NOT NULL
         ),
-        all_pts AS (
-          SELECT start_pt AS geom FROM vertices WHERE start_pt IS NOT NULL
+        endpoints AS (
+          SELECT id,
+            ST_SetSRID(ST_StartPoint(
+              CASE WHEN ST_GeometryType(merged_geom) = 'ST_LineString' THEN merged_geom
+                   ELSE ST_GeometryN(merged_geom, 1)
+              END
+            ), 4326) AS start_pt,
+            ST_SetSRID(ST_EndPoint(
+              CASE WHEN ST_GeometryType(merged_geom) = 'ST_LineString' THEN merged_geom
+                   ELSE ST_GeometryN(merged_geom, 1)
+              END
+            ), 4326) AS end_pt
+          FROM normalized_geom
+        )
+        INSERT INTO temp_nodes (geom)
+        SELECT DISTINCT geom FROM (
+          SELECT start_pt AS geom FROM endpoints WHERE start_pt IS NOT NULL
           UNION
-          SELECT end_pt             FROM vertices WHERE end_pt IS NOT NULL
+          SELECT end_pt AS geom FROM endpoints WHERE end_pt IS NOT NULL
+        ) sub;
+      `);
+
+      await client.query(`
+        CREATE INDEX idx_temp_nodes_geom ON temp_nodes USING GIST(geom);
+      `);
+
+      await client.query(`ANALYZE temp_nodes;`);
+
+      await client.query(`
+        WITH normalized_geom AS (
+          SELECT id,
+            ST_LineMerge(geom) AS merged_geom
+          FROM jaringan_jalan
+          WHERE geom IS NOT NULL
         ),
-        nodes_with_id AS (
-          SELECT geom, ROW_NUMBER() OVER () AS node_id FROM all_pts
+        endpoints AS (
+          SELECT id,
+            ST_SetSRID(ST_StartPoint(
+              CASE WHEN ST_GeometryType(merged_geom) = 'ST_LineString' THEN merged_geom
+                   ELSE ST_GeometryN(merged_geom, 1)
+              END
+            ), 4326) AS start_pt
+          FROM normalized_geom
         )
         UPDATE jaringan_jalan j
-        SET
-          source = (SELECT node_id FROM nodes_with_id WHERE ST_Equals(nodes_with_id.geom, ST_StartPoint(ST_LineMerge(j.geom))) LIMIT 1),
-          target = (SELECT node_id FROM nodes_with_id WHERE ST_Equals(nodes_with_id.geom, ST_EndPoint(ST_LineMerge(j.geom)))  LIMIT 1)
-        WHERE source IS NULL OR target IS NULL;
+        SET source = n.node_id
+        FROM endpoints e
+        JOIN temp_nodes n ON ST_Equals(n.geom, e.start_pt)
+        WHERE j.id = e.id AND j.source IS NULL;
       `);
+
+      await client.query(`
+        WITH normalized_geom AS (
+          SELECT id,
+            ST_LineMerge(geom) AS merged_geom
+          FROM jaringan_jalan
+          WHERE geom IS NOT NULL
+        ),
+        endpoints AS (
+          SELECT id,
+            ST_SetSRID(ST_EndPoint(
+              CASE WHEN ST_GeometryType(merged_geom) = 'ST_LineString' THEN merged_geom
+                   ELSE ST_GeometryN(merged_geom, 1)
+              END
+            ), 4326) AS end_pt
+          FROM normalized_geom
+        )
+        UPDATE jaringan_jalan j
+        SET target = n.node_id
+        FROM endpoints e
+        JOIN temp_nodes n ON ST_Equals(n.geom, e.end_pt)
+        WHERE j.id = e.id AND j.target IS NULL;
+      `);
+
+      await client.query(`DROP TABLE IF EXISTS temp_nodes;`);
 
       const verify = await client.query(`
         SELECT COUNT(*) FROM jaringan_jalan WHERE source IS NOT NULL
@@ -98,12 +165,12 @@ export async function seed(client: PoolClient) {
       const count = parseInt(verify.rows[0].count, 10);
       if (count > 0) {
         topologyBuilt = true;
-        console.log(`[seeder] 03 - CTE fallback succeeded: ${count} edges with source/target.`);
+        console.log(`[seeder] 03 - Fast fallback succeeded: ${count} edges with source/target.`);
       } else {
-        console.error('[seeder] 03 - CTE fallback also failed. node_id assignment may be incomplete.');
+        console.error('[seeder] 03 - Fast fallback also failed. node_id assignment may be incomplete.');
       }
     } catch (err: any) {
-      console.error('[seeder] 03 - CTE fallback failed:', err.message);
+      console.error('[seeder] 03 - Fast fallback failed:', err.message);
     }
   }
 

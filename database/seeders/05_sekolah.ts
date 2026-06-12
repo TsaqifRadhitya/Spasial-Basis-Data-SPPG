@@ -16,7 +16,7 @@ export async function seed(client: PoolClient) {
         $3::jenjang_type,
         $4,
         COALESCE(
-          CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex')) ELSE NULL END,
+          CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex'), 4326) ELSE NULL END,
           ST_GeomFromText($5, 4326)
         ),
         COALESCE(
@@ -24,7 +24,7 @@ export async function seed(client: PoolClient) {
           (SELECT id FROM kelurahan k
            WHERE ST_Contains(k.geom,
              COALESCE(
-               CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex')) ELSE NULL END,
+               CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex'), 4326) ELSE NULL END,
                ST_GeomFromText($5, 4326)
              )
            ) LIMIT 1)
@@ -35,14 +35,14 @@ export async function seed(client: PoolClient) {
             SELECT node_id FROM (
               SELECT source AS node_id,
                 geom <-> COALESCE(
-                  CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex')) ELSE NULL END,
+                  CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex'), 4326) ELSE NULL END,
                   ST_GeomFromText($5, 4326)
                 ) AS dist
               FROM jaringan_jalan
               UNION ALL
               SELECT target,
                 geom <-> COALESCE(
-                  CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex')) ELSE NULL END,
+                  CASE WHEN $5 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($5, 'hex'), 4326) ELSE NULL END,
                   ST_GeomFromText($5, 4326)
                 ) AS dist
               FROM jaringan_jalan
@@ -85,7 +85,7 @@ export async function seed(client: PoolClient) {
         JOIN LATERAL (
           SELECT agg_cost
           FROM pgr_drivingDistance(
-            'SELECT id, source, target, cost FROM jaringan_jalan',
+            'SELECT id, source, target, cost FROM jaringan_jalan WHERE source IS NOT NULL AND target IS NOT NULL',
             sp.node_id,
             6000,
             false
@@ -107,7 +107,7 @@ export async function seed(client: PoolClient) {
       SET jalur_distribusi = (
         SELECT ST_LineMerge(ST_Collect(j.geom ORDER BY r.path_seq))
         FROM pgr_dijkstra(
-          'SELECT id, source, target, cost FROM jaringan_jalan',
+          'SELECT id, source, target, cost FROM jaringan_jalan WHERE source IS NOT NULL AND target IS NOT NULL',
           sp.node_id,
           s.node_id,
           false

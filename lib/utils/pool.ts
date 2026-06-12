@@ -51,6 +51,14 @@ export async function createClient(): Promise<{ client: PoolClient; pool: Pool }
       console.log(`Database "${targetDb}" not found, creating...`);
       await adminPool.query(`CREATE DATABASE ${targetDb}`);
       console.log(`Database "${targetDb}" created.`);
+    } else {
+      console.log(`Terminating active connections to "${targetDb}"...`);
+      await adminPool.query(`
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = $1
+          AND pid <> pg_backend_pid();
+      `, [targetDb]);
     }
   } finally {
     await adminPool.end();

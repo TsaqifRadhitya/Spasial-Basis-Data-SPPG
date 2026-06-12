@@ -15,7 +15,7 @@ export async function seed(client: PoolClient) {
         $2,
         $3,
         COALESCE(
-          CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex')) ELSE NULL END,
+          CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex'), 4326) ELSE NULL END,
           ST_GeomFromText($4, 4326)
         ),
         COALESCE(
@@ -23,7 +23,7 @@ export async function seed(client: PoolClient) {
           (SELECT id FROM kelurahan k
            WHERE ST_Contains(k.geom,
              COALESCE(
-               CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex')) ELSE NULL END,
+               CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex'), 4326) ELSE NULL END,
                ST_GeomFromText($4, 4326)
              )
            ) LIMIT 1)
@@ -34,14 +34,14 @@ export async function seed(client: PoolClient) {
             SELECT node_id FROM (
               SELECT source AS node_id,
                 geom <-> COALESCE(
-                  CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex')) ELSE NULL END,
+                  CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex'), 4326) ELSE NULL END,
                   ST_GeomFromText($4, 4326)
                 ) AS dist
               FROM jaringan_jalan
               UNION ALL
               SELECT target,
                 geom <-> COALESCE(
-                  CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex')) ELSE NULL END,
+                  CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex'), 4326) ELSE NULL END,
                   ST_GeomFromText($4, 4326)
                 ) AS dist
               FROM jaringan_jalan

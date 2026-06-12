@@ -15,7 +15,7 @@ export async function seed(client: PoolClient) {
         $2,
         $3,
         COALESCE(
-          CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex')) ELSE NULL END,
+          CASE WHEN $4 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($4, 'hex'), 4326) ELSE NULL END,
           ST_GeomFromText($4, 4326)
         )
       )

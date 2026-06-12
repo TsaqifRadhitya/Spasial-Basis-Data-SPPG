@@ -34,7 +34,15 @@ export async function migrate() {
 }
 
 // Run when called directly
-migrate().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+const isMain = process.argv[1] && (
+  process.argv[1].endsWith('migrate.ts') ||
+  process.argv[1].endsWith('migrate.js') ||
+  process.argv[1].endsWith('migrate')
+);
+
+if (isMain) {
+  migrate().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
