@@ -15,11 +15,9 @@ export class SekolahService {
 
   static async getAsGeoJSON(kelurahan?: string) {
     const list = await SekolahRepository.getAll(kelurahan);
-    const blankSpots = await SekolahRepository.getBlankSpots();
-    const blankSpotIds = new Set(blankSpots.map(item => item.id));
 
     const features = list.map((item: any) => {
-      const isBlankSpot = blankSpotIds.has(item.id);
+      const isBlankSpot = !item.id_sppg;
       return {
         type: 'Feature',
         geometry: {
@@ -33,11 +31,30 @@ export class SekolahService {
           alamat: item.alamat,
           kelurahan: item.nama_kelurahan,
           node_id: item.node_id,
+          id_sppg: item.id_sppg,
+          jalur_distribusi: item.jalur_distribusi ?? null,
           tipe: 'sekolah',
           status: isBlankSpot ? 'Blank Spot' : 'Terlayani',
         },
       };
     });
+
+    return {
+      type: 'FeatureCollection',
+      features,
+    };
+  }
+
+  static async getSchoolRouteGeoJSON(id: string) {
+    const routes = await SekolahRepository.getSchoolRoute(id);
+    const features = routes.map((item: any) => ({
+      type: 'Feature',
+      geometry: item.geometry,
+      properties: {
+        edge: item.edge,
+        path_seq: item.path_seq,
+      },
+    }));
 
     return {
       type: 'FeatureCollection',

@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { query } from '../../database/db';
 
 export class CoverageRepository {
   static async getPanjangJalanCoverage() {

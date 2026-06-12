@@ -14,6 +14,9 @@ interface MapComponentProps {
   sppgRoutesGeojson?: any;
   selectedSppgId?: string | null;
   onSelectSppg?: (id: string | null) => void;
+  sekolahRouteGeojson?: any;
+  selectedSekolahId?: string | null;
+  onSelectSekolah?: (id: string | null) => void;
 }
 
 export default function MapComponent({
@@ -26,6 +29,9 @@ export default function MapComponent({
   sppgRoutesGeojson,
   selectedSppgId,
   onSelectSppg,
+  sekolahRouteGeojson,
+  selectedSekolahId,
+  onSelectSekolah,
 }: MapComponentProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -36,6 +42,8 @@ export default function MapComponent({
     sppg?: L.GeoJSON;
     rekomendasi?: L.GeoJSON;
     sppgRoutes?: L.GeoJSON;
+    sekolahRoute?: L.GeoJSON;
+    distribusiLines?: L.GeoJSON;
   }>({});
 
   useEffect(() => {
@@ -177,7 +185,7 @@ export default function MapComponent({
       }).addTo(map);
     }
 
-    // 1.8. Render Selected SPPG routes to schools (<= 6km)
+    // 1.8. Render Selected SPPG routes to schools (<= 6km) – legacy API routes
     if (sppgRoutesGeojson) {
       layersRef.current.sppgRoutes = L.geoJSON(sppgRoutesGeojson, {
         style: {
@@ -188,18 +196,83 @@ export default function MapComponent({
       }).addTo(map);
     }
 
+    // 1.9. Render Selected School route to its SPPG – legacy API route
+    if (sekolahRouteGeojson) {
+      layersRef.current.sekolahRoute = L.geoJSON(sekolahRouteGeojson, {
+        style: {
+          color: '#8B5CF6',
+          weight: 5,
+          opacity: 0.9,
+        },
+      }).addTo(map);
+    }
+
+    // 1.85. Render jalur_distribusi from GeoJSON properties
+    // Case A: sekolah selected → show its own jalur_distribusi
+    // Case B: sppg selected → show all jalur_distribusi of schools under that SPPG
+    const distribusiFeatures: any[] = [];
+
+    if (selectedSekolahId && sekolahGeojson) {
+      const selectedSchool = sekolahGeojson.features?.find(
+        (f: any) => f.properties.id === selectedSekolahId
+      );
+      if (selectedSchool?.properties?.jalur_distribusi) {
+        distribusiFeatures.push({
+          type: 'Feature',
+          geometry: selectedSchool.properties.jalur_distribusi,
+          properties: { sekolah_id: selectedSekolahId, mode: 'sekolah' },
+        });
+      }
+    } else if (selectedSppgId && sekolahGeojson) {
+      sekolahGeojson.features?.forEach((f: any) => {
+        if (f.properties.id_sppg === selectedSppgId && f.properties.jalur_distribusi) {
+          distribusiFeatures.push({
+            type: 'Feature',
+            geometry: f.properties.jalur_distribusi,
+            properties: { sekolah_id: f.properties.id, mode: 'sppg' },
+          });
+        }
+      });
+    }
+
+    if (distribusiFeatures.length > 0) {
+      const isSppgMode = distribusiFeatures[0].properties.mode === 'sppg';
+      layersRef.current.sekolahRoute = L.geoJSON(
+        { type: 'FeatureCollection', features: distribusiFeatures } as any,
+        {
+          style: {
+            color: isSppgMode ? '#E0533C' : '#8B5CF6',
+            weight: isSppgMode ? 4 : 5,
+            opacity: 0.92,
+          },
+        }
+      ).addTo(map);
+    }
+
     // 3. Render Schools
     if (sekolahGeojson) {
       layersRef.current.sekolah = L.geoJSON(sekolahGeojson, {
         pointToLayer: (feature: any, latlng: L.LatLng) => {
           const props = feature.properties;
-          const isBlankSpot = props.status === 'Blank Spot';
+          const isBlankSpot = !props.id_sppg;
+          const isSelected = selectedSekolahId === props.id;
+          // Highlight if this school belongs to the selected SPPG
+          const isUnderSelectedSppg = !!(selectedSppgId && props.id_sppg === selectedSppgId);
 
           const markerHtml = `
             <div class="relative flex items-center justify-center w-6 h-6 rounded-full border border-[#1C322D] shadow-md transition-transform hover:scale-125
-              ${isBlankSpot ? 'bg-[#F1CDBE] text-[#1C322D]' : 'bg-[#F8F3EE] text-[#1C322D]'}">
+              ${
+                isSelected
+                  ? 'bg-[#8B5CF6] text-white scale-125 border-[#1C322D] ring-4 ring-[#8B5CF6]/40'
+                  : isUnderSelectedSppg
+                  ? 'bg-[#E0533C] text-white scale-110 ring-4 ring-[#E0533C]/40'
+                  : isBlankSpot
+                  ? 'bg-[#F1CDBE] text-[#1C322D]'
+                  : 'bg-[#F8F3EE] text-[#1C322D]'
+              }">
               <span class="text-[9px] font-black">${props.jenjang}</span>
-              ${isBlankSpot ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EBB552] opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#EBB552]"></span></span>' : ''}
+              ${isBlankSpot && !isSelected && !isUnderSelectedSppg ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EBB552] opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#EBB552]"></span></span>' : ''}
+              ${isUnderSelectedSppg && !isSelected ? '<span class="absolute -inset-1 rounded-full border-2 border-[#E0533C]/60 animate-ping opacity-70"></span>' : ''}
             </div>
           `;
 
@@ -210,22 +283,39 @@ export default function MapComponent({
             iconAnchor: [12, 12],
           });
 
-          return L.marker(latlng, { icon: customIcon });
+          const marker = L.marker(latlng, { icon: customIcon });
+          if (onSelectSekolah) {
+            marker.on('click', () => {
+              onSelectSekolah(isSelected ? null : props.id);
+            });
+          }
+          return marker;
         },
         onEachFeature: (feature: any, layer: L.Layer) => {
           const props = feature.properties;
-          const isBlankSpot = props.status === 'Blank Spot';
+          const isBlankSpot = !props.id_sppg;
+          const servingSppg = sppgGeojson?.features?.find((f: any) => f.properties.id === props.id_sppg);
+          const sppgInfoHtml = servingSppg
+            ? `<div class="mt-2 text-xs bg-emerald-50 text-emerald-800 p-2 rounded-lg border border-emerald-200">
+                 <span class="font-bold">Dilayani Oleh:</span>
+                 <p class="font-semibold text-emerald-950 mt-0.5">${servingSppg.properties.nama}</p>
+               </div>`
+            : `<div class="mt-2 text-xs bg-[#F1CDBE]/30 text-[#1C322D] p-2 rounded-lg border border-[#F1CDBE]/50">
+                 <span class="font-bold">Status:</span> Belum terlayani SPPG (Blank Spot)
+               </div>`;
+
           layer.bindPopup(`
             <div class="p-1 text-[#1C322D] font-sans">
               <div class="flex items-center gap-1.5">
                 <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-white border border-[#1C322D]/20 text-slate-700">${props.jenjang}</span>
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isBlankSpot ? 'bg-[#F1CDBE] text-[#1C322D]' : 'bg-emerald-100 text-emerald-800'}">
-                  ${props.status}
+                  ${isBlankSpot ? 'Blank Spot' : 'Terlayani'}
                 </span>
               </div>
               <h3 class="font-bold text-sm text-slate-900 mt-2">${props.nama}</h3>
               <p class="text-xs text-slate-600 mt-1">${props.alamat}</p>
               <p class="text-[11px] text-slate-500 mt-0.5">Kelurahan: ${props.kelurahan}</p>
+              ${sppgInfoHtml}
             </div>
           `);
         },
@@ -302,16 +392,6 @@ export default function MapComponent({
             iconAnchor: [16, 16],
           });
 
-          // Draw a 6km buffer zone circle around this point
-          L.circle(latlng, {
-            radius: 6000,
-            color: '#EBB552',
-            fillColor: '#EBB552',
-            fillOpacity: 0.04,
-            weight: 1.5,
-            dashArray: '4, 6',
-          }).addTo(map);
-
           return L.marker(latlng, { icon: customIcon });
         },
         onEachFeature: (feature: any, layer: L.Layer) => {
@@ -329,7 +409,7 @@ export default function MapComponent({
         },
       }).addTo(map);
     }
-  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan, sppgRoutesGeojson, selectedSppgId]);
+  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan, sppgRoutesGeojson, selectedSppgId, sekolahRouteGeojson, selectedSekolahId]);
 
   return <div ref={mapContainerRef} className="w-full h-full bg-[#F8F3EE] rounded-2xl overflow-hidden" />;
 }

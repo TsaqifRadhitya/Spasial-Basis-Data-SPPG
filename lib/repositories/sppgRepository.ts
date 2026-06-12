@@ -1,4 +1,4 @@
-import { query } from '../db';
+import { query } from '../../database/db';
 
 export interface SPPG {
   id?: number;

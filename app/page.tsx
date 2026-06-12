@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [selectedKelurahan, setSelectedKelurahan] = useState<string | null>(null);
   const [selectedSppgId, setSelectedSppgId] = useState<string | null>(null);
   const [sppgRoutesData, setSppgRoutesData] = useState<any>(null);
+  const [selectedSekolahId, setSelectedSekolahId] = useState<string | null>(null);
+  const [sekolahRouteData, setSekolahRouteData] = useState<any>(null);
 
   // Layer toggles
   const [showKelurahan, setShowKelurahan] = useState(true);
@@ -150,6 +152,26 @@ export default function Dashboard() {
     loadRoutes();
   }, [selectedSppgId]);
 
+  useEffect(() => {
+    if (!selectedSekolahId) {
+      setSekolahRouteData(null);
+      return;
+    }
+
+    async function loadSchoolRoute() {
+      try {
+        const res = await fetch(`/api/sekolah/${selectedSekolahId}/routes`);
+        if (res.ok) {
+          const data = await res.json();
+          setSekolahRouteData(data);
+        }
+      } catch (err) {
+        console.error('Error fetching school route:', err);
+      }
+    }
+    loadSchoolRoute();
+  }, [selectedSekolahId]);
+
   // Recalculate Recommendations
   const handleRecalculate = async () => {
     setFormLoading(true);
@@ -221,7 +243,7 @@ export default function Dashboard() {
   // Statistics calculation
   const totalSppgs = sppgData?.features?.length || 0;
   const totalSchools = sekolahData?.features?.length || 0;
-  const blankSpotsCount = sekolahData?.features?.filter((f: any) => f.properties.status === 'Blank Spot').length || 0;
+  const blankSpotsCount = sekolahData?.features?.filter((f: any) => !f.properties.id_sppg).length || 0;
   const coveragePercent = totalSchools > 0 ? Math.round(((totalSchools - blankSpotsCount) / totalSchools) * 100) : 0;
 
   return (
@@ -524,23 +546,38 @@ export default function Dashboard() {
 
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-[#1C322D]/60 uppercase tracking-wider font-mono">Sekolah Negeri ({totalSchools})</h3>
-                  {sekolahData?.features?.map((f: any) => (
-                    <div key={f.properties.id} className="p-3 bg-white border border-[#1C322D]/15 rounded-2xl text-xs space-y-1 shadow-sm text-[#1C322D]">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-[#1C322D] font-sans">{f.properties.nama}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono ${
-                          f.properties.status === 'Blank Spot' ? 'bg-[#F1CDBE] text-[#1C322D]' : 'bg-[#F8F3EE] border border-[#1C322D]/10 text-[#1C322D]'
-                        }`}>
-                          {f.properties.status}
-                        </span>
-                      </div>
-                      <p className="text-slate-650 font-serif">{f.properties.alamat}</p>
-                      <div className="flex justify-between text-[10px] text-[#1C322D]/70 font-mono">
-                        <span>Kelurahan: {f.properties.kelurahan}</span>
-                        <span>Node: {f.properties.node_id || '-'}</span>
-                      </div>
-                    </div>
-                  ))}
+                  {sekolahData?.features?.map((f: any) => {
+                    const isSelected = selectedSekolahId === f.properties.id;
+                    return (
+                      <button
+                        key={f.properties.id}
+                        onClick={() => setSelectedSekolahId(isSelected ? null : f.properties.id)}
+                        className={`w-full text-left p-3 border rounded-2xl text-xs space-y-1 shadow-sm transition-all cursor-pointer block
+                          ${isSelected 
+                            ? 'bg-[#1C322D] border-[#1C322D] text-white' 
+                            : 'bg-white border-[#1C322D]/15 text-[#1C322D] hover:bg-slate-50'
+                          }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className={`font-bold font-sans ${isSelected ? 'text-[#EBB552]' : 'text-[#1C322D]'}`}>{f.properties.nama}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-mono ${
+                            !f.properties.id_sppg
+                              ? 'bg-[#F1CDBE] text-[#1C322D]' 
+                              : (isSelected ? 'bg-emerald-800 text-[#F8F3EE]' : 'bg-[#F8F3EE] border border-[#1C322D]/10 text-[#1C322D]')
+                          }`}>
+                            {!f.properties.id_sppg ? 'Blank Spot' : 'Terlayani'}
+                          </span>
+                        </div>
+                        <p className={`font-serif ${isSelected ? 'text-white/80' : 'text-slate-650'}`}>{f.properties.alamat}</p>
+                        <div className={`flex justify-between text-[10px] pt-1 font-mono ${isSelected ? 'text-white/70' : 'text-[#1C322D]/70'}`}>
+                          <span>Kelurahan: {f.properties.kelurahan}</span>
+                          <span className={`${isSelected ? 'text-[#EBB552]' : 'text-[#8B5CF6]'} font-bold`}>
+                            {isSelected ? 'Terpilih - Rute Aktif' : (!f.properties.id_sppg ? 'Blank Spot' : 'Klik untuk lihat rute ke SPPG')}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -648,6 +685,9 @@ export default function Dashboard() {
             sppgRoutesGeojson={sppgRoutesData}
             selectedSppgId={selectedSppgId}
             onSelectSppg={setSelectedSppgId}
+            sekolahRouteGeojson={sekolahRouteData}
+            selectedSekolahId={selectedSekolahId}
+            onSelectSekolah={setSelectedSekolahId}
           />
         </div>
       </main>
