@@ -1,0 +1,3 @@
+id,nama_satuan_pendidikan,jenjang,alamat,geom,id_kelurahan,node_id,created_at
+sekolah_1,SDN Sumbersari 02 Jember,SD,Jl. Tidar No. 20 Jember,"POINT(113.723 -8.167)",kel_sumbersari,,2026-06-12 11:00:00
+sekolah_2,SMPN 03 Jember,SMP,Jl. Mastrip No. 45 Jember,"POINT(113.726 -8.164)",kel_krapyak,,2026-06-12 11:00:00

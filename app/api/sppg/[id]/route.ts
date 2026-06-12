@@ -6,8 +6,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt((await params).id, 10);
-    if (isNaN(id)) {
+    const id = (await params).id;
+    if (!id) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 

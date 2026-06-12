@@ -10,6 +10,7 @@ interface MapComponentProps {
   serviceAreaGeojson: any;
   kelurahanGeojson: any;
   rekomendasiGeojson: any;
+  jalanGeojson: any;
   selectedKelurahan: string | null;
 }
 
@@ -19,12 +20,14 @@ export default function MapComponent({
   serviceAreaGeojson,
   kelurahanGeojson,
   rekomendasiGeojson,
+  jalanGeojson,
   selectedKelurahan,
 }: MapComponentProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<{
     kelurahan?: L.GeoJSON;
+    jalan?: L.GeoJSON;
     serviceArea?: L.GeoJSON;
     sekolah?: L.GeoJSON;
     sppg?: L.GeoJSON;
@@ -97,6 +100,27 @@ export default function MapComponent({
                 <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold font-sans">${props.terlayani_count} Terlayani</span>
                 <span class="px-1.5 py-0.5 rounded bg-[#F1CDBE] text-[#1C322D] font-bold font-sans">${props.blank_spot_count} Blank Spot</span>
               </div>
+            </div>
+          `);
+        },
+      }).addTo(map);
+    }
+
+    // 1.5. Render Jaringan Jalan
+    if (jalanGeojson) {
+      layersRef.current.jalan = L.geoJSON(jalanGeojson, {
+        style: {
+          color: '#2C4B44',
+          weight: 1.5,
+          opacity: 0.35,
+        },
+        onEachFeature: (feature: any, layer: L.Layer) => {
+          const props = feature.properties;
+          layer.bindPopup(`
+            <div class="p-1 text-[#1C322D] font-sans">
+              <h4 class="font-bold text-xs text-[#1C322D] font-sans">Jaringan Jalan</h4>
+              <p class="text-sm font-semibold mt-1">${props.nama || 'Tanpa Nama'}</p>
+              <p class="text-xs text-slate-550 mt-0.5">Kelas: ${props.kelas || '-'}</p>
             </div>
           `);
         },
@@ -261,7 +285,7 @@ export default function MapComponent({
         },
       }).addTo(map);
     }
-  }, [sppgGeojson, sekolahGeojson, serviceAreaGeojson, kelurahanGeojson, rekomendasiGeojson, selectedKelurahan]);
+  }, [sppgGeojson, sekolahGeojson, serviceAreaGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan]);
 
   return <div ref={mapContainerRef} className="w-full h-full bg-[#F8F3EE] rounded-2xl overflow-hidden" />;
 }

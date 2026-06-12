@@ -12,19 +12,6 @@ export class RekomendasiService {
   }
 
   static async generateRekomendasi() {
-    // 1. Calculate driving distances to determine which schools are served
-    const distances = await CoverageRepository.calculateDrivingDistances();
-    
-    // Served school IDs are those with a network distance <= 6000 meters
-    const servedSchoolIds = Array.from(new Set(
-      distances
-        .filter((d: any) => parseFloat(d.jarak_tempuh_meter) <= 6000)
-        .map((d: any) => d.sekolah_id)
-    ));
-
-    // 2. Perform DBSCAN clustering on the remaining (blank spot) schools and find centroids
-    await RekomendasiRepository.recalculateBlankSpots(servedSchoolIds);
-
     return await this.getAsGeoJSON();
   }
 

@@ -1,0 +1,3 @@
+id,nama_kelurahan,id_kecamatan,geom
+kel_sumbersari,Sumbersari,kec_sumbersari,"POLYGON((113.71 -8.18, 113.73 -8.18, 113.73 -8.16, 113.71 -8.16, 113.71 -8.18))"
+kel_krapyak,Krapyak,kec_sumbersari,"POLYGON((113.73 -8.18, 113.75 -8.18, 113.75 -8.16, 113.73 -8.16, 113.73 -8.18))"

@@ -78,69 +78,105 @@ export class CoverageRepository {
   }
 
   static async getServiceAreaPolygons() {
-    const res = await query(`
-      SELECT 
-        sa.id,
-        sa.sppg_id,
-        sp.nama_sppg,
-        ST_AsGeoJSON(sa.service_area_geom)::json AS geometry,
-        sa.max_cost_meter
-      FROM service_area sa
-      JOIN sppg sp ON sa.sppg_id = sp.id
-    `);
-    return res.rows;
-  }
-
-  static async clearServiceAreas() {
-    await query('DELETE FROM service_area');
-  }
-
-  static async generateServiceAreaPolygon(sppgId: number, node_id: number) {
     try {
-      // Find all roads within 6km driving distance and create a buffer around them
-      await query(`
-        INSERT INTO service_area (sppg_id, service_area_geom)
+      const res = await query(`
         SELECT 
-          $1, 
-          ST_Buffer(ST_Union(j.geom), 0.0015) -- approx 150m buffer around paths for visual coverage
-        FROM (
-          SELECT geom FROM jaringan_jalan WHERE source IN (
-            SELECT node FROM pgr_drivingDistance(
-              'SELECT id, source, target, cost FROM jaringan_jalan',
-              $2,
-              6000,
-              false
+          sp.id,
+          sp.id AS sppg_id,
+          sp.nama_sppg,
+          6000 AS max_cost_meter,
+          ST_AsGeoJSON(
+            COALESCE(
+              (
+                SELECT ST_Buffer(ST_Union(j.geom), 0.0015)
+                FROM (
+                  SELECT j_inner.geom 
+                  FROM jaringan_jalan j_inner
+                  JOIN (
+                    SELECT node 
+                    FROM pgr_drivingDistance(
+                      'SELECT id, source, target, cost FROM jaringan_jalan',
+                      sp.node_id,
+                      6000,
+                      false
+                    )
+                  ) dd ON j_inner.source = dd.node OR j_inner.target = dd.node
+                ) j
+              ),
+              ST_Buffer(sp.geom, 0.054)
             )
-          ) OR target IN (
-            SELECT node FROM pgr_drivingDistance(
-              'SELECT id, source, target, cost FROM jaringan_jalan',
-              $2,
-              6000,
-              false
-            )
-          )
-        ) j
-      `, [sppgId, node_id]);
+          )::json AS geometry
+        FROM sppg sp
+      `);
+      return res.rows;
     } catch (e) {
-      console.warn('Failed pgRouting service area generation, falling back to ST_Buffer', e);
-      // Fallback: standard 6km buffer around SPPG
-      await query(`
-        INSERT INTO service_area (sppg_id, service_area_geom)
-        SELECT id, ST_Buffer(geom, 0.054) FROM sppg WHERE id = $1
-      `, [sppgId]);
+      console.warn('pgRouting failed in getServiceAreaPolygons, falling back to ST_Buffer', e);
+      const res = await query(`
+        SELECT 
+          sp.id,
+          sp.id AS sppg_id,
+          sp.nama_sppg,
+          6000 AS max_cost_meter,
+          ST_AsGeoJSON(ST_Buffer(sp.geom, 0.054))::json AS geometry
+        FROM sppg sp
+      `);
+      return res.rows;
     }
   }
 
+  static async clearServiceAreas() {
+    // No-op
+  }
+
+  static async generateServiceAreaPolygon(sppgId: string, node_id: number) {
+    // No-op
+  }
+
   static async getLuasCoverage() {
-    const res = await query(`
-      SELECT 
-        sp.id AS sppg_id,
-        sp.nama_sppg,
-        ROUND((ST_Area(sa.service_area_geom::geography) / 1e6)::numeric, 2) AS luas_coverage_km2
-      FROM sppg sp
-      JOIN service_area sa ON sa.sppg_id = sp.id
-      ORDER BY luas_coverage_km2 DESC
-    `);
-    return res.rows;
+    try {
+      const res = await query(`
+        SELECT 
+          sp.id AS sppg_id,
+          sp.nama_sppg,
+          ROUND(
+            (ST_Area(
+              COALESCE(
+                (
+                  SELECT ST_Buffer(ST_Union(j.geom), 0.0015)
+                  FROM (
+                    SELECT j_inner.geom 
+                    FROM jaringan_jalan j_inner
+                    JOIN (
+                      SELECT node 
+                      FROM pgr_drivingDistance(
+                        'SELECT id, source, target, cost FROM jaringan_jalan',
+                        sp.node_id,
+                        6000,
+                        false
+                      )
+                    ) dd ON j_inner.source = dd.node OR j_inner.target = dd.node
+                  ) j
+                ),
+                ST_Buffer(sp.geom, 0.054)
+              )::geography
+            ) / 1e6)::numeric, 
+            2
+          ) AS luas_coverage_km2
+        FROM sppg sp
+        ORDER BY luas_coverage_km2 DESC
+      `);
+      return res.rows;
+    } catch (e) {
+      console.warn('pgRouting failed in getLuasCoverage, falling back to ST_Buffer', e);
+      const res = await query(`
+        SELECT 
+          sp.id AS sppg_id,
+          sp.nama_sppg,
+          ROUND((ST_Area(ST_Buffer(sp.geom, 0.054)::geography) / 1e6)::numeric, 2) AS luas_coverage_km2
+        FROM sppg sp
+        ORDER BY luas_coverage_km2 DESC
+      `);
+      return res.rows;
+    }
   }
 }

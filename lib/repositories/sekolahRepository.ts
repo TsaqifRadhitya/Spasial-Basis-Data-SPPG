@@ -14,30 +14,71 @@ export interface Sekolah {
 export class SekolahRepository {
   static async getAll(kelurahan?: string) {
     let sql = `
-      SELECT id, nama_sekolah, jenjang, alamat, nama_kelurahan, node_id,
-        ST_X(geom) as longitude, ST_Y(geom) as latitude
-      FROM sekolah
+      SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
+        k.nama_kelurahan, s.node_id,
+        ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude
+      FROM sekolah s
+      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
     `;
     const params = [];
     if (kelurahan) {
-      sql += ` WHERE nama_kelurahan = $1`;
+      sql += ` WHERE k.nama_kelurahan = $1`;
       params.push(kelurahan);
     }
-    sql += ` ORDER BY id`;
+    sql += ` ORDER BY s.id`;
     const res = await query(sql, params);
     return res.rows;
   }
 
   static async getBlankSpots() {
-    const res = await query(`
-      SELECT s.id, s.nama_sekolah, s.jenjang, s.alamat, s.nama_kelurahan, s.node_id,
-        ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
-        sbs.kluster_id
-      FROM sekolah_blank_spot sbs
-      JOIN sekolah s ON sbs.sekolah_id = s.id
-      ORDER BY sbs.kluster_id, s.id
-    `);
-    return res.rows;
+    try {
+      const res = await query(`
+        WITH served_sekolah AS (
+          SELECT DISTINCT s.id
+          FROM sppg sp
+          CROSS JOIN sekolah s
+          JOIN LATERAL (
+            SELECT agg_cost 
+            FROM pgr_drivingDistance(
+              'SELECT id, source, target, cost FROM jaringan_jalan',
+              sp.node_id,
+              6000,
+              false
+            ) AS dd
+            WHERE dd.node = s.node_id
+          ) dd ON true
+          WHERE dd.agg_cost <= 6000
+        )
+        SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
+          k.nama_kelurahan, s.node_id,
+          ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
+          COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
+        FROM sekolah s
+        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+        WHERE s.id NOT IN (SELECT id FROM served_sekolah)
+        ORDER BY kluster_id, s.id
+      `);
+      return res.rows;
+    } catch (e) {
+      console.warn('pgRouting failed in getBlankSpots, falling back to ST_Distance', e);
+      const res = await query(`
+        WITH served_sekolah AS (
+          SELECT DISTINCT s.id
+          FROM sppg sp
+          CROSS JOIN sekolah s
+          WHERE ST_Distance(s.geom::geography, sp.geom::geography) <= 6000
+        )
+        SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
+          k.nama_kelurahan, s.node_id,
+          ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
+          COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
+        FROM sekolah s
+        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+        WHERE s.id NOT IN (SELECT id FROM served_sekolah)
+        ORDER BY kluster_id, s.id
+      `);
+      return res.rows;
+    }
   }
 
   static async findClosestNode(lng: number, lat: number): Promise<number | null> {
@@ -56,9 +97,21 @@ export class SekolahRepository {
   static async create(sekolah: Sekolah) {
     const node_id = sekolah.node_id || await this.findClosestNode(sekolah.longitude, sekolah.latitude);
     const res = await query(`
-      INSERT INTO sekolah (nama_sekolah, jenjang, alamat, nama_kelurahan, node_id, geom)
-      VALUES ($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326))
-      RETURNING id, nama_sekolah, jenjang, alamat, nama_kelurahan, node_id, ST_X(geom) as longitude, ST_Y(geom) as latitude
+      INSERT INTO sekolah (nama_satuan_pendidikan, jenjang, alamat, id_kelurahan, node_id, geom)
+      VALUES (
+        $1, 
+        $2::jenjang_type, 
+        $3, 
+        COALESCE(
+          (SELECT id FROM kelurahan WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($5, $6), 4326)) LIMIT 1),
+          (SELECT id FROM kelurahan WHERE LOWER(nama_kelurahan) = LOWER($4) LIMIT 1)
+        ), 
+        $7, 
+        ST_SetSRID(ST_MakePoint($5, $6), 4326)
+      )
+      RETURNING id, nama_satuan_pendidikan as nama_sekolah, jenjang, alamat, 
+        (SELECT nama_kelurahan FROM kelurahan WHERE id = id_kelurahan) as nama_kelurahan,
+        node_id, ST_X(geom) as longitude, ST_Y(geom) as latitude
     `, [sekolah.nama_sekolah, sekolah.jenjang, sekolah.alamat, sekolah.nama_kelurahan, node_id, sekolah.longitude, sekolah.latitude]);
     return res.rows[0];
   }

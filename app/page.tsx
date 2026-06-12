@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [serviceArea, setServiceArea] = useState<any>(null);
   const [kelurahanBoundaries, setKelurahanBoundaries] = useState<any>(null);
   const [rekomendasi, setRekomendasi] = useState<any>(null);
+  const [jalanData, setJalanData] = useState<any>(null);
 
   // Tabular stats
   const [kelurahanStats, setKelurahanStats] = useState<any[]>([]);
@@ -39,6 +40,7 @@ export default function Dashboard() {
 
   // Layer toggles
   const [showKelurahan, setShowKelurahan] = useState(true);
+  const [showJalan, setShowJalan] = useState(true);
   const [showServiceArea, setShowServiceArea] = useState(true);
   const [showSchools, setShowSchools] = useState(true);
   const [showRekomendasi, setShowRekomendasi] = useState(true);
@@ -73,6 +75,7 @@ export default function Dashboard() {
           resKelurahanStats,
           resCoverage,
           resValidasi,
+          resJalan,
         ] = await Promise.all([
           fetch('/api/sppg?format=geojson'),
           fetch('/api/sekolah?format=geojson'),
@@ -82,6 +85,7 @@ export default function Dashboard() {
           fetch('/api/kelurahan'),
           fetch('/api/coverage'),
           fetch('/api/rekomendasi/validasi'),
+          fetch('/api/jalan'),
         ]);
 
         const [
@@ -93,6 +97,7 @@ export default function Dashboard() {
           kelData,
           covData,
           valData,
+          jalanGeo,
         ] = await Promise.all([
           resSppg.json(),
           resSekolah.json(),
@@ -102,6 +107,7 @@ export default function Dashboard() {
           resKelurahanStats.json(),
           resCoverage.json(),
           resValidasi.json(),
+          resJalan.json(),
         ]);
 
         setSppgData(sppgGeo);
@@ -112,6 +118,7 @@ export default function Dashboard() {
         setKelurahanStats(kelData.data || []);
         setCoverageStats(covData || { panjangJalan: [], drivingDistances: [] });
         setRekomendasiValidasi(valData.data || []);
+        setJalanData(jalanGeo);
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -282,6 +289,15 @@ export default function Dashboard() {
                         className="rounded border-[#1C322D]/35 bg-white text-[#1C322D] focus:ring-[#1C322D] w-4 h-4"
                       />
                       Batas Kelurahan
+                    </label>
+                    <label className="flex items-center gap-2.5 text-xs text-[#1C322D]/85 font-semibold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showJalan}
+                        onChange={(e) => setShowJalan(e.target.checked)}
+                        className="rounded border-[#1C322D]/35 bg-white text-[#1C322D] focus:ring-[#1C322D] w-4 h-4"
+                      />
+                      Jaringan Jalan
                     </label>
                     <label className="flex items-center gap-2.5 text-xs text-[#1C322D]/85 font-semibold cursor-pointer">
                       <input
@@ -602,6 +618,7 @@ export default function Dashboard() {
             serviceAreaGeojson={showServiceArea ? serviceArea : null}
             kelurahanGeojson={showKelurahan ? kelurahanBoundaries : null}
             rekomendasiGeojson={showRekomendasi ? rekomendasi : null}
+            jalanGeojson={showJalan ? jalanData : null}
             selectedKelurahan={selectedKelurahan}
           />
         </div>

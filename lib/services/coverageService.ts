@@ -30,12 +30,7 @@ export class CoverageService {
     };
   }
 
-  static async regenerateServiceAreas(sppgs: { id: number; node_id: number }[]) {
-    await CoverageRepository.clearServiceAreas();
-    for (const sppg of sppgs) {
-      if (sppg.id && sppg.node_id) {
-        await CoverageRepository.generateServiceAreaPolygon(sppg.id, sppg.node_id);
-      }
-    }
+  static async regenerateServiceAreas(sppgs: { id: string; node_id: number }[]) {
+    // No-op (service areas are now dynamically computed on demand)
   }
 }

@@ -6,19 +6,12 @@ export class SppgService {
     return await SppgRepository.getAll();
   }
 
-  static async getSppgById(id: number) {
+  static async getSppgById(id: string) {
     return await SppgRepository.getById(id);
   }
 
   static async createSppg(sppg: SPPG) {
-    const newSppg = await SppgRepository.create(sppg);
-    
-    // Regenerate service areas when SPPG changes
-    if (newSppg && newSppg.id && newSppg.node_id) {
-      await CoverageRepository.generateServiceAreaPolygon(newSppg.id, newSppg.node_id);
-    }
-    
-    return newSppg;
+    return await SppgRepository.create(sppg);
   }
 
   static async getAsGeoJSON() {
