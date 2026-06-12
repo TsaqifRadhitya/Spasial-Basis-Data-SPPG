@@ -222,6 +222,7 @@ async function initializeDatabase() {
         alamat                  VARCHAR(255),
         geom                    GEOMETRY(Point, 4326) NOT NULL,
         id_kelurahan            VARCHAR(50) REFERENCES kelurahan(id) ON DELETE SET NULL,
+        id_sppg                 VARCHAR(50) REFERENCES sppg(id) ON DELETE SET NULL,
         node_id                 INTEGER,
         created_at              TIMESTAMP DEFAULT NOW()
       );
@@ -250,8 +251,6 @@ async function initializeDatabase() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS jaringan_jalan (
         id        BIGINT PRIMARY KEY,
-        nama_jalan VARCHAR(255),
-        kelas_jalan VARCHAR(50),
         source    INTEGER,
         target    INTEGER,
         cost      FLOAT,
@@ -260,6 +259,10 @@ async function initializeDatabase() {
       );
     `);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_jalan_geom ON jaringan_jalan USING GIST(geom);`);
+
+    // Drop old columns if they exist
+    await client.query(`ALTER TABLE jaringan_jalan DROP COLUMN IF EXISTS nama_jalan;`);
+    await client.query(`ALTER TABLE jaringan_jalan DROP COLUMN IF EXISTS kelas_jalan;`);
 
     // Ensure geom column can accept Z-dimension geometries if the table already exists
     try {
@@ -335,6 +338,66 @@ async function initializeDatabase() {
         SELECT id FROM kelurahan WHERE ST_Contains(geom, sekolah.geom) LIMIT 1
       ) WHERE id_kelurahan IS NULL;
     `);
+
+    // Ensure id_sppg column exists on sekolah table (in case of migrations)
+    await client.query(`ALTER TABLE sekolah ADD COLUMN IF NOT EXISTS id_sppg VARCHAR(50) REFERENCES sppg(id) ON DELETE SET NULL;`);
+
+    // Reset id_sppg first before recalculating
+    await client.query(`UPDATE sekolah SET id_sppg = NULL;`);
+
+    // Calculate and update id_sppg based on pgRouting driving distance (closest SPPG <= 6000m)
+    try {
+      await client.query(`
+        WITH school_sppg_costs AS (
+          SELECT 
+            s.id AS sekolah_id,
+            sp.id AS sppg_id,
+            dd.agg_cost AS cost,
+            ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY dd.agg_cost ASC) as rn
+          FROM sekolah s
+          CROSS JOIN sppg sp
+          JOIN LATERAL (
+            SELECT agg_cost 
+            FROM pgr_drivingDistance(
+              'SELECT id, source, target, cost FROM jaringan_jalan',
+              sp.node_id,
+              6000,
+              false
+            ) AS dd
+            WHERE dd.node = s.node_id
+          ) dd ON true
+          WHERE dd.agg_cost <= 6000
+        )
+        UPDATE sekolah s
+        SET id_sppg = ssc.sppg_id
+        FROM school_sppg_costs ssc
+        WHERE s.id = ssc.sekolah_id AND ssc.rn = 1;
+      `);
+      console.log('Successfully updated id_sppg for schools using pgRouting.');
+    } catch (routingError) {
+      console.warn('pgRouting failed to update school id_sppg, using spatial fallback:', routingError);
+      try {
+        await client.query(`
+          WITH school_sppg_distances AS (
+            SELECT 
+              s.id AS sekolah_id,
+              sp.id AS sppg_id,
+              ST_Distance(s.geom::geography, sp.geom::geography) as dist,
+              ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY ST_Distance(s.geom::geography, sp.geom::geography) ASC) as rn
+            FROM sekolah s
+            CROSS JOIN sppg sp
+            WHERE ST_Distance(s.geom::geography, sp.geom::geography) <= 6000
+          )
+          UPDATE sekolah s
+          SET id_sppg = ssd.sppg_id
+          FROM school_sppg_distances ssd
+          WHERE s.id = ssd.sekolah_id AND ssd.rn = 1;
+        `);
+        console.log('Successfully updated id_sppg for schools using spatial fallback.');
+      } catch (spatialError) {
+        console.error('Failed to update school id_sppg using spatial fallback:', spatialError);
+      }
+    }
 
     console.log('Database schema successfully initialized.');
 

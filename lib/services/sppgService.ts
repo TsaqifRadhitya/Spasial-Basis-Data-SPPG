@@ -41,4 +41,23 @@ export class SppgService {
       features,
     };
   }
+
+  static async getSppgRoutesGeoJSON(id: string) {
+    const routes = await SppgRepository.getSppgRoutes(id);
+    
+    const features = routes.map((item: any) => ({
+      type: 'Feature',
+      geometry: item.geometry,
+      properties: {
+        sekolah_id: item.sekolah_id,
+        edge: item.edge,
+        path_seq: item.path_seq,
+      },
+    }));
+
+    return {
+      type: 'FeatureCollection',
+      features,
+    };
+  }
 }

@@ -7,31 +7,35 @@ import 'leaflet/dist/leaflet.css';
 interface MapComponentProps {
   sppgGeojson: any;
   sekolahGeojson: any;
-  serviceAreaGeojson: any;
   kelurahanGeojson: any;
   rekomendasiGeojson: any;
   jalanGeojson: any;
   selectedKelurahan: string | null;
+  sppgRoutesGeojson?: any;
+  selectedSppgId?: string | null;
+  onSelectSppg?: (id: string | null) => void;
 }
 
 export default function MapComponent({
   sppgGeojson,
   sekolahGeojson,
-  serviceAreaGeojson,
   kelurahanGeojson,
   rekomendasiGeojson,
   jalanGeojson,
   selectedKelurahan,
+  sppgRoutesGeojson,
+  selectedSppgId,
+  onSelectSppg,
 }: MapComponentProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<{
     kelurahan?: L.GeoJSON;
     jalan?: L.GeoJSON;
-    serviceArea?: L.GeoJSON;
     sekolah?: L.GeoJSON;
     sppg?: L.GeoJSON;
     rekomendasi?: L.GeoJSON;
+    sppgRoutes?: L.GeoJSON;
   }>({});
 
   useEffect(() => {
@@ -77,31 +81,78 @@ export default function MapComponent({
 
     layersRef.current = {};
 
-    // 1. Render Kelurahan Boundaries
+    // 1. Render Administrative Boundaries
     if (kelurahanGeojson) {
       layersRef.current.kelurahan = L.geoJSON(kelurahanGeojson, {
         style: (feature: any) => {
           const isSelected = selectedKelurahan === feature.properties.nama;
-          return {
-            fillColor: isSelected ? '#EBB552' : '#F1CDBE',
-            fillOpacity: isSelected ? 0.35 : 0.12,
-            color: isSelected ? '#EBB552' : '#1C322D',
-            weight: isSelected ? 3 : 1.5,
-            dashArray: isSelected ? '' : '3',
-          };
+          const isKelurahan = feature.properties.tipe === 'kelurahan';
+
+          if (isKelurahan) {
+            // Colors list for different Kelurahans in Sumbersari
+            const kelurahanColors = [
+              '#F1CDBE', // Pastel Coral
+              '#CBE3DB', // Sage Green
+              '#D4E2F1', // Soft Blue
+              '#F7E5C8', // Cream Yellow
+              '#E2CBE8', // Pastel Purple
+              '#F5D1D1', // Light Red
+              '#D1F5DB', // Mint
+              '#F5E8D1', // Sand
+            ];
+            // Simple string hashing to get a stable color index for each kelurahan name
+            let hash = 0;
+            const name = feature.properties.nama || '';
+            for (let i = 0; i < name.length; i++) {
+              hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % kelurahanColors.length;
+            const fillColor = kelurahanColors[colorIndex];
+
+            return {
+              fillColor: isSelected ? '#EBB552' : fillColor,
+              fillOpacity: isSelected ? 0.45 : 0.25,
+              color: isSelected ? '#EBB552' : '#2C4B44',
+              weight: isSelected ? 3 : 1.5,
+              dashArray: isSelected ? '' : '3',
+            };
+          } else {
+            // Kecamatan style - neutral slate color
+            return {
+              fillColor: '#E2E8F0',
+              fillOpacity: 0.05,
+              color: '#64748B',
+              weight: 1.2,
+              dashArray: '5, 5',
+            };
+          }
         },
         onEachFeature: (feature: any, layer: L.Layer) => {
           const props = feature.properties;
-          layer.bindPopup(`
-            <div class="p-1 text-[#1C322D] font-sans">
-              <h3 class="font-bold text-sm text-[#1C322D] font-sans">Kel. ${props.nama}</h3>
-              <p class="text-xs mt-1 font-sans">Total Sekolah: <span class="font-bold text-slate-800">${props.total_sekolah}</span></p>
-              <div class="flex items-center gap-2 mt-2 text-xs">
-                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold font-sans">${props.terlayani_count} Terlayani</span>
-                <span class="px-1.5 py-0.5 rounded bg-[#F1CDBE] text-[#1C322D] font-bold font-sans">${props.blank_spot_count} Blank Spot</span>
+          if (props.tipe === 'kelurahan') {
+            layer.bindPopup(`
+              <div class="p-1 text-[#1C322D] font-sans">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#1C322D]/10 text-[#1C322D]">
+                  Kelurahan (Sumbersari)
+                </span>
+                <h3 class="font-bold text-sm text-[#1C322D] font-sans mt-1.5">Kel. ${props.nama}</h3>
+                <p class="text-xs mt-1 font-sans">Total Sekolah: <span class="font-bold text-slate-800">${props.total_sekolah}</span></p>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold font-sans">${props.terlayani_count} Terlayani</span>
+                  <span class="px-1.5 py-0.5 rounded bg-[#F1CDBE] text-[#1C322D] font-bold font-sans">${props.blank_spot_count} Blank Spot</span>
+                </div>
               </div>
-            </div>
-          `);
+            `);
+          } else {
+            layer.bindPopup(`
+              <div class="p-1 text-[#1C322D] font-sans">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#64748B]/10 text-[#64748B]">
+                  Kecamatan
+                </span>
+                <h3 class="font-bold text-sm text-[#1C322D] font-sans mt-1.5">Kec. ${props.nama}</h3>
+              </div>
+            `);
+          }
         },
       }).addTo(map);
     }
@@ -119,37 +170,20 @@ export default function MapComponent({
           layer.bindPopup(`
             <div class="p-1 text-[#1C322D] font-sans">
               <h4 class="font-bold text-xs text-[#1C322D] font-sans">Jaringan Jalan</h4>
-              <p class="text-sm font-semibold mt-1">${props.nama || 'Tanpa Nama'}</p>
-              <p class="text-xs text-slate-550 mt-0.5">Kelas: ${props.kelas || '-'}</p>
+              <p class="text-xs text-slate-550 mt-1">ID: ${props.id || '-'}</p>
             </div>
           `);
         },
       }).addTo(map);
     }
 
-    // 2. Render Service Areas
-    if (serviceAreaGeojson) {
-      layersRef.current.serviceArea = L.geoJSON(serviceAreaGeojson, {
-        style: (feature: any) => {
-          // Color based on SPPG ID
-          const colors = ['#EBB552', '#F1CDBE', '#2C4B44'];
-          const color = colors[feature.properties.sppg_id % colors.length] || '#EBB552';
-          return {
-            fillColor: color,
-            fillOpacity: 0.15,
-            color: color,
-            weight: 2,
-            dashArray: '5, 5',
-          };
-        },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          layer.bindPopup(`
-            <div class="p-1 text-[#1C322D] font-sans">
-              <h4 class="font-bold text-xs text-emerald-800 font-sans">Cakupan Pelayanan</h4>
-              <p class="text-sm font-semibold text-slate-900 mt-1">${feature.properties.nama}</p>
-              <p class="text-xs text-slate-600 mt-0.5">Jangkauan Jalan: ~${feature.properties.max_cost_meter / 1000} km</p>
-            </div>
-          `);
+    // 1.8. Render Selected SPPG routes to schools (<= 6km)
+    if (sppgRoutesGeojson) {
+      layersRef.current.sppgRoutes = L.geoJSON(sppgRoutesGeojson, {
+        style: {
+          color: '#E0533C',
+          weight: 4.5,
+          opacity: 0.9,
         },
       }).addTo(map);
     }
@@ -202,9 +236,13 @@ export default function MapComponent({
     if (sppgGeojson) {
       layersRef.current.sppg = L.geoJSON(sppgGeojson, {
         pointToLayer: (feature: any, latlng: L.LatLng) => {
+          const props = feature.properties;
+          const isSelected = selectedSppgId === props.id;
+
           const markerHtml = `
-            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-[#EBB552] border border-[#1C322D] shadow-lg shadow-[#1C322D]/35 hover:scale-110 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#1C322D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl border border-[#1C322D] shadow-lg shadow-[#1C322D]/35 hover:scale-110 transition-transform
+              ${isSelected ? 'bg-[#1C322D] text-[#EBB552]' : 'bg-[#EBB552] text-[#1C322D]'}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
@@ -217,7 +255,13 @@ export default function MapComponent({
             iconAnchor: [18, 18],
           });
 
-          return L.marker(latlng, { icon: customIcon });
+          const marker = L.marker(latlng, { icon: customIcon });
+          if (onSelectSppg) {
+            marker.on('click', () => {
+              onSelectSppg(isSelected ? null : props.id);
+            });
+          }
+          return marker;
         },
         onEachFeature: (feature: any, layer: L.Layer) => {
           const props = feature.properties;
@@ -285,7 +329,7 @@ export default function MapComponent({
         },
       }).addTo(map);
     }
-  }, [sppgGeojson, sekolahGeojson, serviceAreaGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan]);
+  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan, sppgRoutesGeojson, selectedSppgId]);
 
   return <div ref={mapContainerRef} className="w-full h-full bg-[#F8F3EE] rounded-2xl overflow-hidden" />;
 }

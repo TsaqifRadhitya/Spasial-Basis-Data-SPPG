@@ -1,0 +1,2 @@
+id,source,target,cost,reverse_cost,geom
+1,1,2,100.0,100.0,"LINESTRING(113.721 -8.165, 113.725 -8.165)"

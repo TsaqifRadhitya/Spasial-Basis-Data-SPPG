@@ -37,6 +37,8 @@ export default function Dashboard() {
   const [coverageStats, setCoverageStats] = useState<any>({ panjangJalan: [], drivingDistances: [] });
   const [rekomendasiValidasi, setRekomendasiValidasi] = useState<any[]>([]);
   const [selectedKelurahan, setSelectedKelurahan] = useState<string | null>(null);
+  const [selectedSppgId, setSelectedSppgId] = useState<string | null>(null);
+  const [sppgRoutesData, setSppgRoutesData] = useState<any>(null);
 
   // Layer toggles
   const [showKelurahan, setShowKelurahan] = useState(true);
@@ -127,6 +129,26 @@ export default function Dashboard() {
     }
     loadData();
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (!selectedSppgId) {
+      setSppgRoutesData(null);
+      return;
+    }
+
+    async function loadRoutes() {
+      try {
+        const res = await fetch(`/api/sppg/${selectedSppgId}/routes`);
+        if (res.ok) {
+          const data = await res.json();
+          setSppgRoutesData(data);
+        }
+      } catch (err) {
+        console.error('Error fetching SPPG routes:', err);
+      }
+    }
+    loadRoutes();
+  }, [selectedSppgId]);
 
   // Recalculate Recommendations
   const handleRecalculate = async () => {
@@ -288,7 +310,7 @@ export default function Dashboard() {
                         onChange={(e) => setShowKelurahan(e.target.checked)}
                         className="rounded border-[#1C322D]/35 bg-white text-[#1C322D] focus:ring-[#1C322D] w-4 h-4"
                       />
-                      Batas Kelurahan
+                      Batas Wilayah Administrasi
                     </label>
                     <label className="flex items-center gap-2.5 text-xs text-[#1C322D]/85 font-semibold cursor-pointer">
                       <input
@@ -298,15 +320,6 @@ export default function Dashboard() {
                         className="rounded border-[#1C322D]/35 bg-white text-[#1C322D] focus:ring-[#1C322D] w-4 h-4"
                       />
                       Jaringan Jalan
-                    </label>
-                    <label className="flex items-center gap-2.5 text-xs text-[#1C322D]/85 font-semibold cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showServiceArea}
-                        onChange={(e) => setShowServiceArea(e.target.checked)}
-                        className="rounded border-[#1C322D]/35 bg-white text-[#1C322D] focus:ring-[#1C322D] w-4 h-4"
-                      />
-                      Service Area SPPG (6 km Jaringan Jalan)
                     </label>
                     <label className="flex items-center gap-2.5 text-xs text-[#1C322D]/85 font-semibold cursor-pointer">
                       <input
@@ -411,16 +424,29 @@ export default function Dashboard() {
 
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold text-[#1C322D]/60 uppercase tracking-wider font-mono">Daftar SPPG Eksisting</h3>
-                  {sppgData?.features?.map((f: any) => (
-                    <div key={f.properties.id} className="p-3 bg-white border border-[#1C322D]/15 rounded-2xl text-xs space-y-1 shadow-sm text-[#1C322D]">
-                      <h4 className="font-bold text-[#1C322D] font-sans">{f.properties.nama}</h4>
-                      <p className="text-slate-650 font-serif">{f.properties.alamat}</p>
-                      <div className="flex justify-between text-[10px] text-[#1C322D]/70 pt-1 font-mono">
-                        <span>Node: {f.properties.node_id || '-'}</span>
-                        <span className="text-[#EBB552] font-bold">Area: {f.properties.luas_coverage_km2 || '0'} km²</span>
-                      </div>
-                    </div>
-                  ))}
+                  {sppgData?.features?.map((f: any) => {
+                    const isSelected = selectedSppgId === f.properties.id;
+                    return (
+                      <button
+                        key={f.properties.id}
+                        onClick={() => setSelectedSppgId(isSelected ? null : f.properties.id)}
+                        className={`w-full text-left p-3 border rounded-2xl text-xs space-y-1 shadow-sm transition-all cursor-pointer block
+                          ${isSelected 
+                            ? 'bg-[#1C322D] border-[#1C322D] text-white' 
+                            : 'bg-white border-[#1C322D]/15 text-[#1C322D] hover:bg-slate-50'
+                          }`}
+                      >
+                        <h4 className="font-bold font-sans">{f.properties.nama}</h4>
+                        <p className={`font-serif ${isSelected ? 'text-white/80' : 'text-slate-650'}`}>{f.properties.alamat}</p>
+                        <div className={`flex justify-between text-[10px] pt-1 font-mono ${isSelected ? 'text-white/70' : 'text-[#1C322D]/70'}`}>
+                          <span>Node: {f.properties.node_id || '-'}</span>
+                          <span className="text-[#EBB552] font-bold">
+                            {isSelected ? 'Terpilih - Rute Aktif' : 'Klik untuk lihat rute (<= 6km)'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -615,11 +641,13 @@ export default function Dashboard() {
           <MapComponent
             sppgGeojson={sppgData}
             sekolahGeojson={sekolahData}
-            serviceAreaGeojson={showServiceArea ? serviceArea : null}
             kelurahanGeojson={showKelurahan ? kelurahanBoundaries : null}
             rekomendasiGeojson={showRekomendasi ? rekomendasi : null}
             jalanGeojson={showJalan ? jalanData : null}
             selectedKelurahan={selectedKelurahan}
+            sppgRoutesGeojson={sppgRoutesData}
+            selectedSppgId={selectedSppgId}
+            onSelectSppg={setSelectedSppgId}
           />
         </div>
       </main>

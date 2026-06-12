@@ -127,7 +127,39 @@ async function run() {
     }
     console.log(`Successfully seeded ${kelurahanRows.length} kelurahan.`);
 
-    // C. Seed SPPG
+    // C. Seed Jaringan Jalan
+    console.log('Seeding Jaringan Jalan...');
+    const jalanRows = parseCSV(path.join(__dirname, '../seeds/jaringan_jalan.csv'));
+    for (const r of jalanRows) {
+      await client.query(`
+        INSERT INTO jaringan_jalan (id, source, target, cost, reverse_cost, geom)
+        VALUES (
+          $1::bigint, 
+          $2::integer, 
+          $3::integer, 
+          $4::float, 
+          $5::float, 
+          COALESCE(
+            CASE WHEN $6 ~ '^[0-9A-Fa-f]+$' THEN ST_GeomFromWKB(decode($6, 'hex')) ELSE NULL END,
+            ST_GeomFromText($6, 4326)
+          )
+        )
+        ON CONFLICT (id) DO UPDATE 
+        SET source = EXCLUDED.source, target = EXCLUDED.target, 
+            cost = EXCLUDED.cost, reverse_cost = EXCLUDED.reverse_cost, 
+            geom = EXCLUDED.geom
+      `, [
+        r.id, 
+        toNull(r.source), 
+        toNull(r.target), 
+        toNull(r.cost), 
+        toNull(r.reverse_cost), 
+        r.geom
+      ]);
+    }
+    console.log(`Successfully seeded ${jalanRows.length} jaringan jalan.`);
+
+    // D. Seed SPPG
     console.log('Seeding SPPG...');
     const sppgRows = parseCSV(path.join(__dirname, '../seeds/sppg.csv'));
     for (const r of sppgRows) {

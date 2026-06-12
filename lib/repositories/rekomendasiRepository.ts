@@ -12,29 +12,13 @@ export class RekomendasiRepository {
   static async getAll() {
     try {
       const res = await query(`
-        WITH served_sekolah AS (
-          SELECT DISTINCT s.id
-          FROM sppg sp
-          CROSS JOIN sekolah s
-          JOIN LATERAL (
-            SELECT agg_cost 
-            FROM pgr_drivingDistance(
-              'SELECT id, source, target, cost FROM jaringan_jalan',
-              sp.node_id,
-              6000,
-              false
-            ) AS dd
-            WHERE dd.node = s.node_id
-          ) dd ON true
-          WHERE dd.agg_cost <= 6000
-        ),
-        blank_spot_sekolah AS (
+        WITH blank_spot_sekolah AS (
           SELECT 
             id, 
             geom,
             COALESCE(ST_ClusterDBSCAN(geom, 0.054, 1) OVER (), 0) AS kluster_id
           FROM sekolah
-          WHERE id NOT IN (SELECT id FROM served_sekolah)
+          WHERE id_sppg IS NULL
         )
         SELECT 
           kluster_id AS id,
@@ -48,21 +32,15 @@ export class RekomendasiRepository {
       `);
       return res.rows;
     } catch (e) {
-      console.warn('pgRouting failed in RekomendasiRepository.getAll, falling back to ST_Distance', e);
+      console.warn('getAll query failed:', e);
       const res = await query(`
-        WITH served_sekolah AS (
-          SELECT DISTINCT s.id
-          FROM sppg sp
-          CROSS JOIN sekolah s
-          WHERE ST_Distance(s.geom::geography, sp.geom::geography) <= 6000
-        ),
-        blank_spot_sekolah AS (
+        WITH blank_spot_sekolah AS (
           SELECT 
             id, 
             geom,
             COALESCE(ST_ClusterDBSCAN(geom, 0.054, 1) OVER (), 0) AS kluster_id
           FROM sekolah
-          WHERE id NOT IN (SELECT id FROM served_sekolah)
+          WHERE id_sppg IS NULL
         )
         SELECT 
           kluster_id AS id,
@@ -81,30 +59,14 @@ export class RekomendasiRepository {
   static async getValidasi() {
     try {
       const res = await query(`
-        WITH served_sekolah AS (
-          SELECT DISTINCT s.id
-          FROM sppg sp
-          CROSS JOIN sekolah s
-          JOIN LATERAL (
-            SELECT agg_cost 
-            FROM pgr_drivingDistance(
-              'SELECT id, source, target, cost FROM jaringan_jalan',
-              sp.node_id,
-              6000,
-              false
-            ) AS dd
-            WHERE dd.node = s.node_id
-          ) dd ON true
-          WHERE dd.agg_cost <= 6000
-        ),
-        blank_spot_sekolah AS (
+        WITH blank_spot_sekolah AS (
           SELECT 
             id, 
             nama_satuan_pendidikan AS nama_sekolah,
             geom,
             COALESCE(ST_ClusterDBSCAN(geom, 0.054, 1) OVER (), 0) AS kluster_id
           FROM sekolah
-          WHERE id NOT IN (SELECT id FROM served_sekolah)
+          WHERE id_sppg IS NULL
         ),
         rekomendasi AS (
           SELECT 
@@ -127,22 +89,16 @@ export class RekomendasiRepository {
       `);
       return res.rows;
     } catch (e) {
-      console.warn('pgRouting failed in RekomendasiRepository.getValidasi, falling back to ST_Distance', e);
+      console.warn('getValidasi query failed:', e);
       const res = await query(`
-        WITH served_sekolah AS (
-          SELECT DISTINCT s.id
-          FROM sppg sp
-          CROSS JOIN sekolah s
-          WHERE ST_Distance(s.geom::geography, sp.geom::geography) <= 6000
-        ),
-        blank_spot_sekolah AS (
+        WITH blank_spot_sekolah AS (
           SELECT 
             id, 
             nama_satuan_pendidikan AS nama_sekolah,
             geom,
             COALESCE(ST_ClusterDBSCAN(geom, 0.054, 1) OVER (), 0) AS kluster_id
           FROM sekolah
-          WHERE id NOT IN (SELECT id FROM served_sekolah)
+          WHERE id_sppg IS NULL
         ),
         rekomendasi AS (
           SELECT 

@@ -28,8 +28,8 @@ export class CoverageRepository {
       const res = await query(`
         SELECT 
           s.id AS sekolah_id,
-          s.nama_sekolah,
-          s.nama_kelurahan,
+          s.nama_satuan_pendidikan AS nama_sekolah,
+          k.nama_kelurahan,
           s.jenjang,
           sp.id AS sppg_id,
           sp.nama_sppg,
@@ -40,6 +40,7 @@ export class CoverageRepository {
           END AS status_cakupan
         FROM sppg sp
         CROSS JOIN sekolah s
+        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
         JOIN LATERAL (
           SELECT agg_cost 
           FROM pgr_drivingDistance(
@@ -59,8 +60,8 @@ export class CoverageRepository {
       const res = await query(`
         SELECT 
           s.id AS sekolah_id,
-          s.nama_sekolah,
-          s.nama_kelurahan,
+          s.nama_satuan_pendidikan AS nama_sekolah,
+          k.nama_kelurahan,
           s.jenjang,
           sp.id AS sppg_id,
           sp.nama_sppg,
@@ -71,6 +72,7 @@ export class CoverageRepository {
           END AS status_cakupan
         FROM sppg sp
         CROSS JOIN sekolah s
+        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
         ORDER BY sp.id, jarak_tempuh_meter
       `);
       return res.rows;
