@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SppgService } from '@/lib/services/sppgService';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -17,13 +17,14 @@ export async function GET(
     }
 
     return NextResponse.json({ data });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -34,7 +35,8 @@ export async function DELETE(
 
     await SppgService.deleteSppg(id);
     return NextResponse.json({ success: true, message: 'SPPG deleted and affected schools reassigned successfully.' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

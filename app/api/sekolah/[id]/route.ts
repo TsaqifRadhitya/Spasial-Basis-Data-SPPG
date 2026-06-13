@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SekolahService } from '@/lib/services/sekolahService';
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -13,7 +13,8 @@ export async function DELETE(
 
     await SekolahService.delete(id);
     return NextResponse.json({ success: true, message: 'Sekolah deleted successfully.' });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -54,9 +54,10 @@ export const ensureInit = async () => {
   return initPromise;
 };
 
-export const query = async (text: string, params?: any[]) => {
+export const query = async (text: string, params?: unknown[]) => {
   await ensureInit();
   return pool.query(text, params);
 };
 
-export default { query, ensureInit };
+const db = { query, ensureInit };
+export default db;

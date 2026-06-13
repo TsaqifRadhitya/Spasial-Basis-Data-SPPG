@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SppgService } from '@/lib/services/sppgService';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -13,7 +13,8 @@ export async function GET(
 
     const geojson = await SppgService.getSppgRoutesGeoJSON(id);
     return NextResponse.json(geojson);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

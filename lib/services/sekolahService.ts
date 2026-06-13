@@ -1,6 +1,25 @@
 import { SekolahRepository, Sekolah } from '../repositories/sekolahRepository';
 import { withRetry } from '../utils/withRetry';
 
+interface SekolahRow {
+  id: string;
+  nama_sekolah: string;
+  jenjang: 'SD' | 'SMP' | 'SMA' | 'SMK';
+  alamat: string;
+  nama_kelurahan: string | null;
+  node_id: string | null;
+  id_sppg: string | null;
+  longitude: number;
+  latitude: number;
+  jalur_distribusi: object | null;
+}
+
+interface SekolahRouteRow {
+  edge: number;
+  path_seq: number;
+  geometry: object;
+}
+
 export class SekolahService {
   static async getAll(kelurahan?: string) {
     return withRetry(() => SekolahRepository.getAll(kelurahan));
@@ -17,7 +36,7 @@ export class SekolahService {
   static async getAsGeoJSON(kelurahan?: string) {
     const list = await withRetry(() => SekolahRepository.getAll(kelurahan));
 
-    const features = list.map((item: any) => {
+    const features = list.map((item: SekolahRow) => {
       const isBlankSpot = !item.id_sppg;
       return {
         type: 'Feature',
@@ -48,7 +67,7 @@ export class SekolahService {
 
   static async getSchoolRouteGeoJSON(id: string) {
     const routes = await withRetry(() => SekolahRepository.getSchoolRoute(id));
-    const features = routes.map((item: any) => ({
+    const features = routes.map((item: SekolahRouteRow) => ({
       type: 'Feature',
       geometry: item.geometry,
       properties: {

@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
 
     const data = await SppgService.getAllSppg();
     return NextResponse.json({ data });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ data }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,14 @@
 import { CoverageRepository } from '../repositories/coverageRepository';
 import { withRetry } from '../utils/withRetry';
 
+interface ServiceAreaRow {
+  id: string;
+  sppg_id: string;
+  nama_sppg: string;
+  max_cost_meter: number;
+  geometry: object;
+}
+
 export class CoverageService {
   static async getPanjangJalan() {
     return withRetry(() => CoverageRepository.getPanjangJalanCoverage());
@@ -13,7 +21,7 @@ export class CoverageService {
   static async getServiceAreaGeoJSON() {
     const list = await withRetry(() => CoverageRepository.getServiceAreaPolygons());
 
-    const features = list.map((item: any) => ({
+    const features = list.map((item: ServiceAreaRow) => ({
       type: 'Feature',
       geometry: item.geometry,
       properties: {

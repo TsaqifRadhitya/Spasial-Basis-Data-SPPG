@@ -11,6 +11,8 @@
     "seed": "tsx --tsconfig tsconfig.database.json database/seed.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.0",
+    "axios": "^1.17.0",
     "leaflet": "^1.9.4",
     "next": "16.2.9",
     "pg": "^8.21.0",

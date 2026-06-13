@@ -1,6 +1,29 @@
+import axios from "axios";
+
 export interface GoogleRouteResult {
   distanceMeters: number;
   coordinates: [number, number][]; // [longitude, latitude] for PostGIS WKT
+}
+
+interface GoogleDirectionsResponse {
+  status: string;
+  routes: Array<{
+    legs: Array<{
+      distance: {
+        value: number;
+      };
+    }>;
+    overview_polyline: {
+      points: string;
+    };
+  }>;
+}
+
+interface GoogleDistanceMatrixResponse {
+  status: string;
+  rows: Array<{
+    elements: DistanceMatrixElement[];
+  }>;
 }
 
 /**
@@ -55,12 +78,7 @@ export async function getGoogleRoute(
 
   try {
     const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&mode=driving&key=${apiKey}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`[GoogleMaps] API HTTP Error: ${response.statusText}`);
-      return null;
-    }
-    const data = await response.json();
+    const { data } = await axios.get<GoogleDirectionsResponse>(url);
     if (data.status !== 'OK' || !data.routes || data.routes.length === 0) {
       console.warn(`[GoogleMaps] Directions API returned status: ${data.status}`);
       return null;
@@ -110,12 +128,7 @@ export async function getGoogleDistanceMatrix(
   try {
     const destString = destinations.map(d => `${d.lat},${d.lng}`).join('|');
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${encodeURIComponent(destString)}&mode=driving&key=${apiKey}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`[GoogleMaps] Distance Matrix API HTTP Error: ${response.statusText}`);
-      return null;
-    }
-    const data = await response.json();
+    const { data } = await axios.get<GoogleDistanceMatrixResponse>(url);
     if (data.status !== 'OK' || !data.rows || data.rows.length === 0) {
       console.warn(`[GoogleMaps] Distance Matrix API returned status: ${data.status}`);
       return null;

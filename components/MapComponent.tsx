@@ -3,24 +3,40 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type {
+  SppgCollection,
+  SekolahCollection,
+  GeoJSONCollection,
+  RekomendasiCollection,
+  RekomendasiValidasiItem,
+  SekolahProperties,
+  SppgProperties,
+  RekomendasiProperties,
+  KelurahanCollection,
+  KelurahanFeatureProperties,
+} from '@/types/dashboard';
+
+// Leaflet's GeoJSON layer accepts a generic GeoJSON object; we use
+// the typed collections where possible and narrow with type guards.
+
 
 interface MapComponentProps {
-  sppgGeojson: any;
-  sekolahGeojson: any;
-  kelurahanGeojson: any;
-  rekomendasiGeojson: any;
+  sppgGeojson: SppgCollection | null;
+  sekolahGeojson: SekolahCollection | null;
+  kelurahanGeojson: KelurahanCollection | null;
+  rekomendasiGeojson: RekomendasiCollection | null;
   showJalan: boolean;
   selectedKelurahan: string | null;
   onSelectKelurahan?: (nama: string | null) => void;
-  sppgRoutesGeojson?: any;
+  sppgRoutesGeojson?: GeoJSONCollection | null;
   selectedSppgId?: string | null;
   onSelectSppg?: (id: string | null) => void;
-  sekolahRouteGeojson?: any;
+  sekolahRouteGeojson?: GeoJSONCollection | null;
   selectedSekolahId?: string | null;
   onSelectSekolah?: (id: string | null) => void;
   selectedRekomendasiId?: string | null;
   onSelectRekomendasi?: (id: string | null) => void;
-  rekomendasiValidasi?: any[];
+  rekomendasiValidasi?: RekomendasiValidasiItem[];
 }
 
 export default function MapComponent({
@@ -57,7 +73,6 @@ export default function MapComponent({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Initialize map centered at Sumbersari, Jember
     const map = L.map(mapContainerRef.current, {
       center: [-8.170, 113.722],
       zoom: 13,
@@ -65,10 +80,8 @@ export default function MapComponent({
     });
     mapRef.current = map;
 
-    // Custom positioned zoom control
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Beautiful Light Voyager Map Tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap &copy; CartoDB',
       subdomains: 'abcd',
@@ -83,48 +96,34 @@ export default function MapComponent({
     };
   }, []);
 
-  // Update Layers when props change
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear previous layers
     Object.values(layersRef.current).forEach((layer) => {
-      if (layer && map.hasLayer(layer)) {
-        map.removeLayer(layer);
-      }
+      if (layer && map.hasLayer(layer)) map.removeLayer(layer);
     });
-
     layersRef.current = {};
 
-    // 1. Render Administrative Boundaries
+    // 1. Administrative boundaries
     if (kelurahanGeojson) {
-      layersRef.current.kelurahan = L.geoJSON(kelurahanGeojson, {
-        style: (feature: any) => {
-          const isSelected = selectedKelurahan === feature.properties.nama;
-          const isKelurahan = feature.properties.tipe === 'kelurahan';
+      layersRef.current.kelurahan = L.geoJSON(kelurahanGeojson as Parameters<typeof L.geoJSON>[0], {
+        style: (feature) => {
+          const props = feature?.properties as KelurahanFeatureProperties;
+          const isSelected = selectedKelurahan === props.nama;
+          const isKelurahan = props.tipe === 'kelurahan';
 
           if (isKelurahan) {
-            // Colors list for different Kelurahans in Sumbersari
             const kelurahanColors = [
-              '#F1CDBE', // Pastel Coral
-              '#CBE3DB', // Sage Green
-              '#D4E2F1', // Soft Blue
-              '#F7E5C8', // Cream Yellow
-              '#E2CBE8', // Pastel Purple
-              '#F5D1D1', // Light Red
-              '#D1F5DB', // Mint
-              '#F5E8D1', // Sand
+              '#F1CDBE', '#CBE3DB', '#D4E2F1', '#F7E5C8',
+              '#E2CBE8', '#F5D1D1', '#D1F5DB', '#F5E8D1',
             ];
-            // Simple string hashing to get a stable color index for each kelurahan name
             let hash = 0;
-            const name = feature.properties.nama || '';
+            const name = props.nama || '';
             for (let i = 0; i < name.length; i++) {
               hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            const colorIndex = Math.abs(hash) % kelurahanColors.length;
-            const fillColor = kelurahanColors[colorIndex];
-
+            const fillColor = kelurahanColors[Math.abs(hash) % kelurahanColors.length];
             return {
               fillColor: isSelected ? '#EBB552' : fillColor,
               fillOpacity: isSelected ? 0.45 : 0.25,
@@ -132,32 +131,25 @@ export default function MapComponent({
               weight: isSelected ? 3 : 1.5,
               dashArray: isSelected ? '' : '3',
             };
-          } else {
-            // Kecamatan style - neutral slate color
-            return {
-              fillColor: '#E2E8F0',
-              fillOpacity: 0.05,
-              color: '#64748B',
-              weight: 1.2,
-              dashArray: '5, 5',
-            };
           }
+          return {
+            fillColor: '#E2E8F0',
+            fillOpacity: 0.05,
+            color: '#64748B',
+            weight: 1.2,
+            dashArray: '5, 5',
+          };
         },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          const props = feature.properties;
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties as KelurahanFeatureProperties;
           if (props.tipe === 'kelurahan') {
             layer.on('click', () => {
-              if (onSelectKelurahan) {
-                const isAlreadySelected = selectedKelurahan === props.nama;
-                onSelectKelurahan(isAlreadySelected ? null : props.nama);
-              }
+              onSelectKelurahan?.(selectedKelurahan === props.nama ? null : props.nama);
             });
           } else {
             layer.bindPopup(`
               <div class="p-1 text-[#1C322D] font-sans">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#64748B]/10 text-[#64748B]">
-                  Kecamatan
-                </span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#64748B]/10 text-[#64748B]">Kecamatan</span>
                 <h3 class="font-bold text-sm text-[#1C322D] font-sans mt-1.5">Kec. ${props.nama}</h3>
               </div>
             `);
@@ -166,57 +158,43 @@ export default function MapComponent({
       }).addTo(map);
     }
 
-    // 1.5. Render Jaringan Jalan (Thin Background Distribution Routes)
+    // 1.5. Subtle distribution route lines (all schools)
     if (showJalan && sekolahGeojson) {
-      const allRoutesFeatures: any[] = [];
-      sekolahGeojson.features?.forEach((f: any) => {
-        if (f.properties?.jalur_distribusi) {
-          allRoutesFeatures.push({
-            type: 'Feature',
-            geometry: f.properties.jalur_distribusi,
-            properties: { sekolah_id: f.properties.id, tipe: 'distribusi_subtle' },
-          });
-        }
-      });
+      const allRoutesFeatures = sekolahGeojson.features
+        .filter((f) => f.properties.jalur_distribusi !== null)
+        .map((f) => ({
+          type: 'Feature' as const,
+          geometry: f.properties.jalur_distribusi!,
+          properties: { sekolah_id: f.properties.id, tipe: 'distribusi_subtle' },
+        }));
 
       if (allRoutesFeatures.length > 0) {
         layersRef.current.jalan = L.geoJSON(
-          { type: 'FeatureCollection', features: allRoutesFeatures } as any,
-          {
-            style: {
-              color: '#8B5CF6',
-              weight: 1.2,
-              opacity: 0.45,
-            },
-          }
+          { type: 'FeatureCollection', features: allRoutesFeatures } as Parameters<typeof L.geoJSON>[0],
+          { style: { color: '#8B5CF6', weight: 1.2, opacity: 0.45 } }
         ).addTo(map);
       }
     }
 
-    // 1.85. Render jalur_distribusi from GeoJSON properties
-    // Case A: sekolah selected → show its own jalur_distribusi
-    // Case B: sppg selected → show all jalur_distribusi of schools under that SPPG
-    const distribusiFeatures: any[] = [];
+    // 1.85. Highlighted distribution routes for selected sekolah/sppg
+    type DistribusiFeature = {
+      type: 'Feature';
+      geometry: object;
+      properties: { sekolah_id: string; mode: 'sekolah' | 'sppg' };
+    };
+    const distribusiFeatures: DistribusiFeature[] = [];
 
     if (selectedSekolahId && sekolahGeojson) {
-      const selectedSchool = sekolahGeojson.features?.find(
-        (f: any) => f.properties.id === selectedSekolahId
-      );
-      if (selectedSchool?.properties?.jalur_distribusi) {
-        distribusiFeatures.push({
-          type: 'Feature',
-          geometry: selectedSchool.properties.jalur_distribusi,
-          properties: { sekolah_id: selectedSekolahId, mode: 'sekolah' },
-        });
+      const sel = sekolahGeojson.features.find((f) => f.properties.id === selectedSekolahId);
+      const jalur = sel?.properties.jalur_distribusi;
+      if (jalur) {
+        distribusiFeatures.push({ type: 'Feature', geometry: jalur, properties: { sekolah_id: selectedSekolahId, mode: 'sekolah' } });
       }
     } else if (selectedSppgId && sekolahGeojson) {
-      sekolahGeojson.features?.forEach((f: any) => {
-        if (f.properties.id_sppg === selectedSppgId && f.properties.jalur_distribusi) {
-          distribusiFeatures.push({
-            type: 'Feature',
-            geometry: f.properties.jalur_distribusi,
-            properties: { sekolah_id: f.properties.id, mode: 'sppg' },
-          });
+      sekolahGeojson.features.forEach((f) => {
+        const jalur = f.properties.jalur_distribusi;
+        if (f.properties.id_sppg === selectedSppgId && jalur) {
+          distribusiFeatures.push({ type: 'Feature', geometry: jalur, properties: { sekolah_id: f.properties.id, mode: 'sppg' } });
         }
       });
     }
@@ -224,32 +202,24 @@ export default function MapComponent({
     if (distribusiFeatures.length > 0) {
       const isSppgMode = distribusiFeatures[0].properties.mode === 'sppg';
       layersRef.current.sekolahRoute = L.geoJSON(
-        { type: 'FeatureCollection', features: distribusiFeatures } as any,
-        {
-          style: {
-            color: isSppgMode ? '#E0533C' : '#8B5CF6',
-            weight: isSppgMode ? 4 : 5,
-            opacity: 0.92,
-          },
-        }
+        { type: 'FeatureCollection', features: distribusiFeatures } as Parameters<typeof L.geoJSON>[0],
+        { style: { color: isSppgMode ? '#E0533C' : '#8B5CF6', weight: isSppgMode ? 4 : 5, opacity: 0.92 } }
       ).addTo(map);
     }
 
-    // 3. Render Schools
+    // 3. Schools
     if (sekolahGeojson) {
-      layersRef.current.sekolah = L.geoJSON(sekolahGeojson, {
-        pointToLayer: (feature: any, latlng: L.LatLng) => {
-          const props = feature.properties;
+      layersRef.current.sekolah = L.geoJSON(sekolahGeojson as Parameters<typeof L.geoJSON>[0], {
+        pointToLayer: (feature, latlng) => {
+          const props = feature.properties as SekolahProperties;
           const isBlankSpot = !props.id_sppg;
           const isSelected = selectedSekolahId === props.id;
-          // Highlight if this school belongs to the selected SPPG
           const isUnderSelectedSppg = !!(selectedSppgId && props.id_sppg === selectedSppgId);
 
-          // Highlight if this school belongs to the selected recommendation cluster
           let isUnderSelectedRekomendasi = false;
           if (selectedRekomendasiId && isBlankSpot && rekomendasiValidasi) {
             isUnderSelectedRekomendasi = rekomendasiValidasi.some(
-              (v: any) => v.nama_sekolah === props.nama && String(v.kluster_id) === selectedRekomendasiId
+              (v) => v.nama_sekolah === props.nama && String(v.kluster_id) === selectedRekomendasiId
             );
           }
 
@@ -289,16 +259,14 @@ export default function MapComponent({
 
           const marker = L.marker(latlng, { icon: customIcon });
           if (onSelectSekolah) {
-            marker.on('click', () => {
-              onSelectSekolah(isSelected ? null : props.id);
-            });
+            marker.on('click', () => onSelectSekolah(isSelected ? null : props.id));
           }
           return marker;
         },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          const props = feature.properties;
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties as SekolahProperties;
           const isBlankSpot = !props.id_sppg;
-          const servingSppg = sppgGeojson?.features?.find((f: any) => f.properties.id === props.id_sppg);
+          const servingSppg = sppgGeojson?.features.find((f) => f.properties.id === props.id_sppg);
           const sppgInfoHtml = servingSppg
             ? `<div class="mt-2 text-xs bg-emerald-50 text-emerald-800 p-2 rounded-lg border border-emerald-200">
                  <span class="font-bold">Dilayani Oleh:</span>
@@ -326,11 +294,11 @@ export default function MapComponent({
       }).addTo(map);
     }
 
-    // 4. Render SPPG Locations
+    // 4. SPPG locations
     if (sppgGeojson) {
-      layersRef.current.sppg = L.geoJSON(sppgGeojson, {
-        pointToLayer: (feature: any, latlng: L.LatLng) => {
-          const props = feature.properties;
+      layersRef.current.sppg = L.geoJSON(sppgGeojson as Parameters<typeof L.geoJSON>[0], {
+        pointToLayer: (feature, latlng) => {
+          const props = feature.properties as SppgProperties;
           const isSelected = selectedSppgId === props.id;
 
           const markerHtml = `
@@ -352,43 +320,37 @@ export default function MapComponent({
 
           const marker = L.marker(latlng, { icon: customIcon });
           if (onSelectSppg) {
-            marker.on('click', () => {
-              onSelectSppg(isSelected ? null : props.id);
-            });
+            marker.on('click', () => onSelectSppg(isSelected ? null : props.id));
           }
           return marker;
         },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          const props = feature.properties;
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties as SppgProperties;
           layer.bindPopup(`
             <div class="p-1 text-[#1C322D] font-sans">
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#1C322D]/10 text-[#1C322D]">
-                Satuan Pelayanan Gizi
-              </span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#1C322D]/10 text-[#1C322D]">Satuan Pelayanan Gizi</span>
               <h3 class="font-black text-sm text-slate-900 mt-2">${props.nama}</h3>
               <p class="text-xs text-slate-600 mt-1">${props.alamat}</p>
-              <p class="text-xs text-[#EBB552] bg-[#1C322D] px-2 py-1 rounded-lg mt-2 font-bold font-mono">Luas Coverage: ${props.luas_coverage_km2 || '0'} km²</p>
             </div>
           `);
         },
       }).addTo(map);
     }
 
-    // 5. Render Recommendations
+    // 5. Recommendations
     if (rekomendasiGeojson) {
-      layersRef.current.rekomendasi = L.geoJSON(rekomendasiGeojson, {
-        pointToLayer: (feature: any, latlng: L.LatLng) => {
-          const props = feature.properties;
-          const isSelected = selectedRekomendasiId === String(props.kluster_id) || selectedRekomendasiId === String(props.id);
+      layersRef.current.rekomendasi = L.geoJSON(rekomendasiGeojson as Parameters<typeof L.geoJSON>[0], {
+        pointToLayer: (feature, latlng) => {
+          const props = feature.properties as RekomendasiProperties;
+          const isSelected =
+            selectedRekomendasiId === String(props.kluster_id) ||
+            selectedRekomendasiId === String(props.id);
 
-          // Circular marker with ping animation
           const markerHtml = `
             <div class="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#1C322D] shadow-lg hover:scale-115 transition-transform
-              ${
-                isSelected
-                  ? 'bg-[#1C322D] text-[#EBB552] scale-110 ring-4 ring-[#EBB552]/40 border-[#EBB552]'
-                  : 'bg-[#F1CDBE] text-[#1C322D]'
-              }">
+              ${isSelected
+                ? 'bg-[#1C322D] text-[#EBB552] scale-110 ring-4 ring-[#EBB552]/40 border-[#EBB552]'
+                : 'bg-[#F1CDBE] text-[#1C322D]'}">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="8" x2="12" y2="16"/>
@@ -406,11 +368,10 @@ export default function MapComponent({
           });
 
           const marker = L.marker(latlng, { icon: customIcon });
-
           if (onSelectRekomendasi) {
-            marker.on('click', () => {
-              onSelectRekomendasi(isSelected ? null : String(props.kluster_id));
-            });
+            marker.on('click', () =>
+              onSelectRekomendasi(isSelected ? null : String(props.kluster_id))
+            );
           }
 
           if (isSelected) {
@@ -423,19 +384,16 @@ export default function MapComponent({
               dashArray: '4, 4',
               interactive: false,
             });
-
             return L.layerGroup([circle, marker]);
           }
 
           return marker;
         },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          const props = feature.properties;
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties as RekomendasiProperties;
           layer.bindPopup(`
             <div class="p-1 text-[#1C322D] font-sans">
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#EBB552]/20 text-[#1C322D]">
-                Rekomendasi SPPG Baru
-              </span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#EBB552]/20 text-[#1C322D]">Rekomendasi SPPG Baru</span>
               <h3 class="font-bold text-sm text-slate-900 mt-2 font-sans">Sentroid Kluster #${props.kluster_id}</h3>
               <p class="text-xs text-slate-600 mt-1 font-sans">Mengcover: <span class="text-[#EBB552] bg-[#1C322D] px-1.5 py-0.5 rounded font-bold font-mono">${props.jumlah_sekolah} Sekolah</span></p>
               <p class="text-[10px] text-slate-400 mt-2">Dihitung otomatis via ST_Centroid basis threshold 6km.</p>
@@ -444,7 +402,12 @@ export default function MapComponent({
         },
       }).addTo(map);
     }
-  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, showJalan, selectedKelurahan, sppgRoutesGeojson, selectedSppgId, sekolahRouteGeojson, selectedSekolahId, selectedRekomendasiId, rekomendasiValidasi]);
+  }, [
+    sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson,
+    showJalan, selectedKelurahan, sppgRoutesGeojson, selectedSppgId,
+    sekolahRouteGeojson, selectedSekolahId, selectedRekomendasiId, rekomendasiValidasi,
+    onSelectKelurahan, onSelectSppg, onSelectSekolah, onSelectRekomendasi,
+  ]);
 
   return <div ref={mapContainerRef} className="w-full h-full bg-[#F8F3EE] rounded-2xl overflow-hidden" />;
 }

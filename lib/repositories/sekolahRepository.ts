@@ -68,7 +68,7 @@ export class SekolahRepository {
     schoolId: string,
     schoolLng: number,
     schoolLat: number,
-    executor: { query: (text: string, params?: any[]) => Promise<any> } = db
+    executor: { query: (text: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> } = db
   ) {
     // 1. Fetch candidate SPPGs whose straight-line (Euclidean) distance to this school is <= 6km.
     // (A straight-line distance > 6km guarantees that the road distance is also > 6km, which saves API quota).
@@ -84,8 +84,8 @@ export class SekolahRepository {
     let bestRouteWkt: string | null = null;
 
     if (sppgRes.rows.length > 0) {
-      const candidates = sppgRes.rows;
-      const destinations = candidates.map((sp: any) => ({
+      const candidates = sppgRes.rows as unknown as { id: string; lat: string; lng: string }[];
+      const destinations = candidates.map((sp) => ({
         lat: parseFloat(sp.lat),
         lng: parseFloat(sp.lng)
       }));
@@ -189,7 +189,7 @@ export class SekolahRepository {
     newSppgId: string,
     newSppgLng: number,
     newSppgLat: number,
-    executor: { query: (text: string, params?: any[]) => Promise<any> } = db
+    executor: { query: (text: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> } = db
   ) {
     // 1. Fetch schools within 6km straight-line (Euclidean) distance of the new SPPG
     const schoolsRes = await executor.query(`
@@ -203,7 +203,17 @@ export class SekolahRepository {
       WHERE ST_DWithin(s.geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 6000)
     `, [newSppgLng, newSppgLat]);
 
-    for (const school of schoolsRes.rows) {
+    interface SchoolRowToReassign {
+      id: string;
+      lng: string;
+      lat: string;
+      id_sppg: string | null;
+      current_road_distance: string;
+    }
+
+    const schools = schoolsRes.rows as unknown as SchoolRowToReassign[];
+
+    for (const school of schools) {
       const schoolLat = parseFloat(school.lat);
       const schoolLng = parseFloat(school.lng);
 
@@ -220,7 +230,7 @@ export class SekolahRepository {
         // - The school was a Blank Spot (no SPPG, currentDistance is Infinity) OR
         // - The new SPPG has a shorter actual driving road distance
         if (!school.id_sppg || route.distanceMeters < currentDistance) {
-          const routeWkt = `LINESTRING(${route.coordinates.map((p: any) => `${p[0]} ${p[1]}`).join(',')})`;
+          const routeWkt = `LINESTRING(${route.coordinates.map((p) => `${p[0]} ${p[1]}`).join(',')})`;
           await executor.query(`
             UPDATE sekolah
             SET id_sppg = $1,

@@ -2,6 +2,23 @@ import { SppgRepository, SPPG } from '../repositories/sppgRepository';
 import { CoverageRepository } from '../repositories/coverageRepository';
 import { withRetry } from '../utils/withRetry';
 
+interface SppgRow {
+  id: string;
+  nama_sppg: string;
+  alamat: string;
+  node_id: string | null;
+  longitude: number;
+  latitude: number;
+  kelurahan: string | null;
+}
+
+interface SppgRouteRow {
+  sekolah_id: string;
+  edge: number;
+  path_seq: number;
+  geometry: object;
+}
+
 export class SppgService {
   static async getAllSppg() {
     return withRetry(() => SppgRepository.getAll());
@@ -23,7 +40,7 @@ export class SppgService {
 
     const coverageMap = new Map(coverageAreaList.map(item => [item.sppg_id, parseFloat(item.luas_coverage_km2)]));
 
-    const features = list.map((item: any) => ({
+    const features = list.map((item: SppgRow) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -49,7 +66,7 @@ export class SppgService {
   static async getSppgRoutesGeoJSON(id: string) {
     const routes = await withRetry(() => SppgRepository.getSppgRoutes(id));
 
-    const features = routes.map((item: any) => ({
+    const features = routes.map((item: SppgRouteRow) => ({
       type: 'Feature',
       geometry: item.geometry,
       properties: {
