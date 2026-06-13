@@ -3,7 +3,6 @@ import { PoolClient } from 'pg';
 export async function up(client: PoolClient) {
   console.log('[migration] 007 - Adding created_at / updated_at to all tables...');
 
-  // ── 1. Shared trigger function ───────────────────────────────────────────
   await client.query(`
     CREATE OR REPLACE FUNCTION set_updated_at()
     RETURNS TRIGGER AS $$
@@ -14,10 +13,7 @@ export async function up(client: PoolClient) {
     $$ LANGUAGE plpgsql;
   `);
 
-  // ── Helper: attach the trigger to a table if not already attached ────────
-  // (We'll do each table explicitly below)
 
-  // ── 2. kecamatan ────────────────────────────────────────────────────────
   await client.query(`
     ALTER TABLE kecamatan
       ADD COLUMN IF NOT EXISTS created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -30,7 +26,6 @@ export async function up(client: PoolClient) {
       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
   `);
 
-  // ── 3. kelurahan ────────────────────────────────────────────────────────
   await client.query(`
     ALTER TABLE kelurahan
       ADD COLUMN IF NOT EXISTS created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -43,8 +38,6 @@ export async function up(client: PoolClient) {
       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
   `);
 
-  // ── 4. sppg ─────────────────────────────────────────────────────────────
-  // created_at already exists from migration 005; ensure type & add updated_at
   await client.query(`
     ALTER TABLE sppg
       ALTER COLUMN created_at SET DATA TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
@@ -58,7 +51,6 @@ export async function up(client: PoolClient) {
       FOR EACH ROW EXECUTE FUNCTION set_updated_at();
   `);
 
-  // ── 5. sekolah ──────────────────────────────────────────────────────────
   await client.query(`
     ALTER TABLE sekolah
       ALTER COLUMN created_at SET DATA TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',

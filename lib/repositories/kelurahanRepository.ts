@@ -58,7 +58,6 @@ export class KelurahanRepository {
   }
 
   static async checkLocation(longitude: number, latitude: number) {
-    // 1. Find containing kecamatan
     const kecRes = await query(`
       SELECT id, nama_kecamatan
       FROM kecamatan
@@ -77,7 +76,6 @@ export class KelurahanRepository {
       return { insideSumbersari: false, kecamatan: kec.nama_kecamatan, kelurahan: null };
     }
 
-    // 2. Find containing kelurahan
     const kelRes = await query(`
       SELECT id, nama_kelurahan
       FROM kelurahan

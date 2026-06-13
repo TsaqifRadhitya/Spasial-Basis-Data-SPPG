@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Hooks
 import {
   useSppgQuery,
   useSppgRoutesQuery,
@@ -27,7 +26,6 @@ import {
   useRecalculateRekomendasiMutation,
 } from "@/hooks/useRekomendasi";
 
-// Components
 import SidebarHeader from "@/components/organisms/SidebarHeader";
 import TabNav from "@/components/organisms/TabNav";
 import MapTabPanel from "@/components/organisms/MapTabPanel";
@@ -51,7 +49,6 @@ import type {
 import type { SppgForm } from "@/modules/sppg/types";
 import type { SekolahForm } from "@/modules/sekolah/types";
 
-// Dynamically import MapComponent to disable SSR
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
   loading: () => (
@@ -87,7 +84,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
     <div className="space-y-4 animate-pulse">
       {activeTab === "map" && (
         <>
-          {/* Layer Customizer Skeleton */}
+          {}
           <div className="p-5 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
             <div className="h-5 bg-slate-200 rounded w-1/3"></div>
             <div className="space-y-3 pt-2">
@@ -96,7 +93,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
               <div className="h-24 bg-slate-100 rounded-xl"></div>
             </div>
           </div>
-          {/* Kelurahan Stats Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-4 bg-slate-200 rounded w-1/2"></div>
             <div className="space-y-2">
@@ -113,7 +110,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
 
       {activeTab === "sppg" && (
         <>
-          {/* Form SPPG Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-5 bg-slate-200 rounded w-1/3"></div>
             <div className="space-y-3">
@@ -126,7 +123,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
               <div className="h-9 bg-slate-200 rounded-xl"></div>
             </div>
           </div>
-          {/* List SPPG Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-4 bg-slate-200 rounded w-1/4"></div>
             <div className="space-y-2">
@@ -140,7 +137,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
 
       {activeTab === "sekolah" && (
         <>
-          {/* Form Sekolah Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-5 bg-slate-200 rounded w-1/3"></div>
             <div className="space-y-3">
@@ -157,7 +154,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
               <div className="h-9 bg-slate-200 rounded-xl"></div>
             </div>
           </div>
-          {/* List Sekolah Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-4 bg-slate-200 rounded w-1/4"></div>
             <div className="space-y-2">
@@ -171,7 +168,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
 
       {activeTab === "coverage" && (
         <>
-          {/* Coverage Stats Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
             <div className="h-5 bg-slate-200 rounded w-1/2"></div>
             <div className="space-y-2">
@@ -193,7 +190,7 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
 
       {activeTab === "rekomendasi" && (
         <>
-          {/* Rekomendasi Panel Skeleton */}
+          {}
           <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
             <div className="h-5 bg-slate-200 rounded w-1/2"></div>
             <div className="h-12 bg-slate-200 rounded-xl"></div>
@@ -215,14 +212,12 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("map");
 
-  // Layer toggles UI state
   const [showKelurahan, setShowKelurahan] = useState(true);
   const [showJalan, setShowJalan] = useState(true);
   const [showSppg, setShowSppg] = useState(true);
   const [showSchools, setShowSchools] = useState(true);
   const [showRekomendasi, setShowRekomendasi] = useState(true);
 
-  // Selection states
   const [selectedKelurahan, setSelectedKelurahan] = useState<string | null>(
     null,
   );
@@ -234,7 +229,6 @@ export default function Dashboard() {
     string | null
   >(null);
 
-  // Queries
   const { data: sppgData = null, isLoading: isLoadingSppg } = useSppgQuery();
   const { data: sekolahData = null, isLoading: isLoadingSekolah } =
     useSekolahQuery();
@@ -260,7 +254,6 @@ export default function Dashboard() {
     isLoadingCoverage ||
     isLoadingValidasi;
 
-  // Sub-filters states for map customize layout
   const [activeKecamatans, setActiveKecamatans] = useState<string[]>([]);
   const [activeKelurahans, setActiveKelurahans] = useState<string[]>([]);
   const [activeJenjangs, setActiveJenjangs] = useState<string[]>([
@@ -270,7 +263,6 @@ export default function Dashboard() {
     "SMK",
   ]);
 
-  // Extract all unique Kecamatan and Kelurahan names
   const allKecamatans = useMemo(() => {
     if (!kelurahanBoundaries) return [];
     return Array.from(
@@ -305,7 +297,6 @@ export default function Dashboard() {
     ).sort();
   }, [kelurahanBoundaries]);
 
-  // Initialize active sub-filters when data is loaded
   useEffect(() => {
     if (kelurahanBoundaries) {
       const kecs: string[] = Array.from(
@@ -341,7 +332,6 @@ export default function Dashboard() {
     }
   }, [kelurahanBoundaries]);
 
-  // Filtered GeoJSON data based on active selection
   const filteredKelurahan = useMemo(() => {
     if (!kelurahanBoundaries) return null;
     return {
@@ -368,7 +358,6 @@ export default function Dashboard() {
     };
   }, [sekolahData, activeJenjangs]);
 
-  // Auto-clear selection state if selected item is filtered out
   useEffect(() => {
     if (selectedSekolahId && sekolahData) {
       const selectedSchool = sekolahData.features.find(
@@ -393,12 +382,10 @@ export default function Dashboard() {
     }
   }, [activeKelurahans, selectedKelurahan]);
 
-  // Selection dependent queries
   const { data: sppgRoutesData = null } = useSppgRoutesQuery(selectedSppgId);
   const { data: sekolahRouteData = null } =
     useSchoolRouteQuery(selectedSekolahId);
 
-  // Form states
   const [sppgForm, setSppgForm] = useState<SppgForm>({
     nama_sppg: "",
     alamat: "",
@@ -416,7 +403,6 @@ export default function Dashboard() {
     latitude: "",
   });
 
-  // Location picker states & logic
   const [isPickerActive, setIsPickerActive] = useState(false);
 
   useEffect(() => {
@@ -451,7 +437,6 @@ export default function Dashboard() {
     sppgForm.longitude,
   ]);
 
-  // Toasts state
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = (message: string, type: ToastType = "info") => {
@@ -513,7 +498,6 @@ export default function Dashboard() {
     }
   };
 
-  // Delete modal state
   const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
     isOpen: false,
     type: "sppg",
@@ -521,7 +505,6 @@ export default function Dashboard() {
     name: "",
   });
 
-  // Mutations
   const addSppgMutation = useAddSppgMutation();
   const deleteSppgMutation = useDeleteSppgMutation();
   const addSekolahMutation = useAddSekolahMutation();
@@ -533,7 +516,6 @@ export default function Dashboard() {
     addSekolahMutation.isPending ||
     recalculateMutation.isPending;
 
-  // Derived stats
   const totalSppgs = sppgData?.features?.length || 0;
   const totalSchools = sekolahData?.features?.length || 0;
   const blankSpotsCount =
@@ -544,7 +526,6 @@ export default function Dashboard() {
       ? Math.round(((totalSchools - blankSpotsCount) / totalSchools) * 100)
       : 0;
 
-  // Handlers
   const handleRecalculate = () => {
     recalculateMutation.mutate(undefined, {
       onSuccess: () => {
@@ -668,7 +649,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-[#F8F3EE] text-[#1C322D] antialiased font-sans">
-      {/* Sidebar Controls */}
+      {}
       <aside className="w-full lg:w-[480px] h-full p-6 bg-white border-b lg:border-b-0 lg:border-r border-[#1C322D]/15 flex flex-col justify-between shrink-0 shadow-lg z-10 overflow-y-auto">
         <div>
           <SidebarHeader
@@ -680,7 +661,7 @@ export default function Dashboard() {
 
           <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Dynamic Tab Contents */}
+          {}
           <div className="space-y-4 pr-1">
             {isDataLoading ? (
               <SidebarSkeleton activeTab={activeTab} />
@@ -781,14 +762,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="border-t border-[#1C322D]/15 pt-4 mt-6 text-[10px] text-[#1C322D]/60 flex justify-between items-center font-mono">
           <span>Kecamatan Sumbersari GIS v1.0</span>
           <span>© 2026 Badan Gizi Nasional</span>
         </div>
       </aside>
 
-      {/* Main Map View */}
+      {}
       <main className="flex-1 h-full overflow-hidden relative p-6 flex flex-col">
         <div className="flex-1 bg-white border border-[#1C322D]/15 rounded-2xl relative overflow-hidden flex shadow-lg">
           <MapComponent
@@ -813,7 +794,7 @@ export default function Dashboard() {
             pickedLocation={pickedLocation}
           />
 
-          {/* Map Overlays for Selected SPPG/Sekolah/Kelurahan/Rekomendasi */}
+          {}
           <MapOverlayPanel
             selectedSekolahId={selectedSekolahId}
             sekolahData={sekolahData}
@@ -834,7 +815,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Delete Confirmation Modal */}
+      {}
       <DeleteConfirmModal
         deleteModal={deleteModal}
         setDeleteModal={setDeleteModal}
@@ -842,7 +823,7 @@ export default function Dashboard() {
         handleDeleteSekolah={handleDeleteSekolah}
       />
 
-      {/* Toasts Container */}
+      {}
       <ToastContainer toasts={toasts} />
     </div>
   );

@@ -8,7 +8,7 @@ export interface SppgProperties {
   node_id: string | null;
   longitude: number;
   latitude: number;
-  id_sppg?: never; // discriminator — not present on SPPG itself
+  id_sppg?: never;
 }
 
 export type SppgFeature = GeoJSONFeature<SppgProperties>;

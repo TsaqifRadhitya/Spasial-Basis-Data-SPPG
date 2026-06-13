@@ -3,7 +3,6 @@ import { PoolClient } from 'pg';
 export async function up(client: PoolClient) {
   console.log('[migration] 006 - Creating table: sekolah...');
 
-  // Handle legacy integer-id migration
   const exists = await client.query(`
     SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sekolah');
   `);
@@ -57,7 +56,6 @@ export async function up(client: PoolClient) {
     `);
   }
 
-  // Ensure columns exist for incremental migrations
   await client.query(`ALTER TABLE sekolah ADD COLUMN IF NOT EXISTS id_sppg VARCHAR(50) REFERENCES sppg(id) ON DELETE SET NULL;`);
   await client.query(`ALTER TABLE sekolah ADD COLUMN IF NOT EXISTS jalur_distribusi GEOMETRY;`);
 

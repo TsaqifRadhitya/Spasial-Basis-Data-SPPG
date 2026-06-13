@@ -1,9 +1,5 @@
 import fs from 'fs';
 
-/**
- * Shared CSV parser utility.
- * Supports quoted fields and custom delimiters.
- */
 export function parseCSV(filePath: string, delimiter = ','): Record<string, string | null>[] {
   if (!fs.existsSync(filePath)) {
     console.warn(`File not found: ${filePath}`);
@@ -48,6 +44,5 @@ export function parseCSV(filePath: string, delimiter = ','): Record<string, stri
   return rows;
 }
 
-/** Convert empty/undefined to null */
 export const toNull = (val: string | null | undefined): string | null =>
   val === '' || val === undefined ? null : val;

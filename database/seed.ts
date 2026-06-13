@@ -9,10 +9,8 @@ import { seed as seed05 } from './seeders/05_sekolah';
 const seeders = [seed01, seed02, seed04, seed05];
 
 async function run() {
-  // 1. Run migrations first
   await migrate();
 
-  // 2. Run seeders
   const { client, pool } = await createClient();
   try {
     console.log('\nRunning seeders...');

@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { Pool, PoolClient } from 'pg';
 
-// Load .env.local for CLI scripts
 try {
   const envPath = path.join(process.cwd(), '.env.local');
   if (fs.existsSync(envPath)) {
@@ -33,9 +32,7 @@ function getAdminUrl(url: string): string {
   }
 }
 
-/** Ensure target DB exists, then return a connected client from the main pool. */
 export async function createClient(): Promise<{ client: PoolClient; pool: Pool }> {
-  // 1. Ensure DB exists
   const adminPool = new Pool({ connectionString: getAdminUrl(DATABASE_URL) });
   try {
     let targetDb = 'sppg_gis_db';
@@ -64,7 +61,6 @@ export async function createClient(): Promise<{ client: PoolClient; pool: Pool }
     await adminPool.end();
   }
 
-  // 2. Connect to target DB
   const pool = new Pool({ connectionString: DATABASE_URL });
   const client = await pool.connect();
   return { client, pool };

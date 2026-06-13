@@ -16,7 +16,6 @@ export async function up(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_kelurahan_geom ON kelurahan USING GIST(geom);
   `);
 
-  // Migrate legacy batas_kelurahan rows if table exists
   const legacyCheck = await client.query(`
     SELECT EXISTS (
       SELECT FROM information_schema.tables

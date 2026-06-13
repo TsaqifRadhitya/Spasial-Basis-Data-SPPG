@@ -16,8 +16,6 @@ import type {
   KelurahanFeatureProperties,
 } from "@/types/dashboard";
 
-// Leaflet's GeoJSON layer accepts a generic GeoJSON object; we use
-// the typed collections where possible and narrow with type guards.
 
 interface MapComponentProps {
   sppgGeojson: SppgCollection | null;
@@ -145,7 +143,6 @@ export default function MapComponent({
     });
     layersRef.current = {};
 
-    // 1. Administrative boundaries
     if (kelurahanGeojson) {
       layersRef.current.kelurahan = L.geoJSON(
         kelurahanGeojson as Parameters<typeof L.geoJSON>[0],
@@ -211,7 +208,6 @@ export default function MapComponent({
       ).addTo(map);
     }
 
-    // 1.5. Subtle distribution route lines (all schools)
     if (showJalan && sekolahGeojson) {
       const allRoutesFeatures = sekolahGeojson.features
         .filter((f) => f.properties.jalur_distribusi !== null)
@@ -235,7 +231,6 @@ export default function MapComponent({
       }
     }
 
-    // 1.85. Highlighted distribution routes for selected sekolah/sppg
     type DistribusiFeature = {
       type: "Feature";
       geometry: object;
@@ -285,7 +280,6 @@ export default function MapComponent({
       ).addTo(map);
     }
 
-    // 3. Schools
     if (sekolahGeojson) {
       layersRef.current.sekolah = L.geoJSON(
         sekolahGeojson as Parameters<typeof L.geoJSON>[0],
@@ -384,7 +378,6 @@ export default function MapComponent({
       ).addTo(map);
     }
 
-    // 4. SPPG locations
     if (sppgGeojson) {
       layersRef.current.sppg = L.geoJSON(
         sppgGeojson as Parameters<typeof L.geoJSON>[0],
@@ -458,7 +451,6 @@ export default function MapComponent({
       ).addTo(map);
     }
 
-    // 5. Recommendations
     if (rekomendasiGeojson) {
       layersRef.current.rekomendasi = L.geoJSON(
         rekomendasiGeojson as Parameters<typeof L.geoJSON>[0],
@@ -543,7 +535,6 @@ export default function MapComponent({
       ).addTo(map);
     }
 
-    // 6. Draft picked location marker
     if (pickedLocation) {
       const isSekolah = pickedLocation.type === "sekolah";
       const markerHtml = isSekolah

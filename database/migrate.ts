@@ -33,7 +33,6 @@ export async function migrate() {
   }
 }
 
-// Run when called directly
 const isMain = process.argv[1] && (
   process.argv[1].endsWith('migrate.ts') ||
   process.argv[1].endsWith('migrate.js') ||

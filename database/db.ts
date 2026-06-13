@@ -16,10 +16,6 @@ function getAdminConnectionString(url: string): string {
   }
 }
 
-/**
- * Ensures the target database exists and the connection pool is initialized.
- * Table creation (DDL) is handled separately by database/migrate.ts.
- */
 async function initializePool() {
   console.log('Initializing database pool...');
 

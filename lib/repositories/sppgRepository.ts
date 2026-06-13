@@ -46,7 +46,6 @@ export class SppgRepository {
 
     const newSppg = res.rows[0];
 
-    // Reassign schools that are closer to the new SPPG
     await SekolahRepository.reassignSchoolsForNewSppg(
       newSppg.id,
       parseFloat(newSppg.longitude),
@@ -57,17 +56,14 @@ export class SppgRepository {
   }
 
   static async delete(id: string) {
-    // 1. Find schools that are currently assigned to this SPPG
     const schoolsRes = await query(`
       SELECT id, ST_X(geom) as lng, ST_Y(geom) as lat 
       FROM sekolah 
       WHERE id_sppg = $1
     `, [id]);
 
-    // 2. Delete the SPPG (cascade/set null constraints on FK will run)
     await query(`DELETE FROM sppg WHERE id = $1`, [id]);
 
-    // 3. Reassign only the orphaned schools to their next-closest SPPG under 6km
     for (const school of schoolsRes.rows) {
       await SekolahRepository.assignSppgAndRouteForSchool(
         school.id,

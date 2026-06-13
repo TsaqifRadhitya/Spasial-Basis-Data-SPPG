@@ -2,7 +2,7 @@ import axios from "axios";
 
 export interface GoogleRouteResult {
   distanceMeters: number;
-  coordinates: [number, number][]; // [longitude, latitude] for PostGIS WKT
+  coordinates: [number, number][]; 
 }
 
 interface GoogleDirectionsResponse {
@@ -26,9 +26,6 @@ interface GoogleDistanceMatrixResponse {
   }>;
 }
 
-/**
- * Decodes a Google encoded polyline string into an array of [longitude, latitude] coordinates.
- */
 export function decodePolyline(encoded: string): [number, number][] {
   const points: [number, number][] = [];
   let index = 0;
@@ -63,10 +60,6 @@ export function decodePolyline(encoded: string): [number, number][] {
   return points;
 }
 
-/**
- * Fetches routing information from the Google Maps Directions API.
- * Returns null if the API key is not configured, or if the API call fails/returns no results.
- */
 export async function getGoogleRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number }
@@ -103,7 +96,7 @@ export async function getGoogleRoute(
 export interface DistanceMatrixElement {
   status: string;
   distance?: {
-    value: number; // meters
+    value: number; 
     text: string;
   };
   duration?: {
@@ -112,10 +105,6 @@ export interface DistanceMatrixElement {
   };
 }
 
-/**
- * Fetches batch routing distance and duration from the Google Maps Distance Matrix API.
- * Returns null if the API key is not configured, or if the API call fails/returns no results.
- */
 export async function getGoogleDistanceMatrix(
   origin: { lat: number; lng: number },
   destinations: { lat: number; lng: number }[]

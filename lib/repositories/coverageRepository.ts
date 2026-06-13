@@ -2,7 +2,6 @@ import { query } from '../../database/db';
 
 export class CoverageRepository {
   static async getPanjangJalanCoverage() {
-    // Returns the sum of route lengths of all schools assigned to each SPPG
     const res = await query(`
       SELECT 
         sp.id AS sppg_id,
@@ -22,7 +21,6 @@ export class CoverageRepository {
       return [];
     }
 
-    // Returns distance along computed route (from sekolah.jalur_distribusi) to the assigned SPPG
     const res = await query(`
       SELECT 
         s.id AS sekolah_id,
@@ -45,7 +43,6 @@ export class CoverageRepository {
   }
 
   static async getServiceAreaPolygons() {
-    // Generate a 6km buffer (approx. 0.054 degrees in EPSG:4326) around each SPPG
     const res = await query(`
       SELECT 
         sp.id,
@@ -59,7 +56,6 @@ export class CoverageRepository {
   }
 
   static async getLuasCoverage() {
-    // Return area of the 6km buffer in square kilometers
     const res = await query(`
       SELECT 
         sp.id AS sppg_id,

@@ -1,4 +1,3 @@
-// ─── GeoJSON primitives ───────────────────────────────────────────────────────
 
 export interface GeoJSONGeometry {
   type: string;
@@ -16,7 +15,6 @@ export interface GeoJSONCollection<P = Record<string, unknown>> {
   features: GeoJSONFeature<P>[];
 }
 
-// ─── SPPG ─────────────────────────────────────────────────────────────────────
 
 export interface SppgProperties {
   id: string;
@@ -26,7 +24,7 @@ export interface SppgProperties {
   node_id: string | null;
   longitude: number;
   latitude: number;
-  id_sppg?: never; // discriminator — not present on SPPG itself
+  id_sppg?: never;
 }
 
 export type SppgFeature = GeoJSONFeature<SppgProperties>;
@@ -40,7 +38,6 @@ export interface SppgForm {
   latitude: string;
 }
 
-// ─── Sekolah ──────────────────────────────────────────────────────────────────
 
 export interface SekolahProperties {
   id: string;
@@ -49,7 +46,6 @@ export interface SekolahProperties {
   alamat: string;
   kelurahan: string | null;
   id_sppg: string | null;
-  /** GeoJSON geometry object for the distribution route — null when Blank Spot */
   jalur_distribusi: object | null;
 }
 
@@ -65,7 +61,6 @@ export interface SekolahForm {
   latitude: string;
 }
 
-// ─── Kelurahan stats (tabular and GeoJSON properties) ─────────────────────────
 
 export interface KelurahanStat {
   id: string;
@@ -89,7 +84,6 @@ export interface KelurahanFeatureProperties {
 export type KelurahanCollection = GeoJSONCollection<KelurahanFeatureProperties>;
 
 
-// ─── Coverage stats ───────────────────────────────────────────────────────────
 
 export interface PanjangJalanItem {
   sppg_id: string;
@@ -113,7 +107,6 @@ export interface CoverageStats {
   drivingDistances: DrivingDistanceItem[];
 }
 
-// ─── Rekomendasi ──────────────────────────────────────────────────────────────
 
 export interface RekomendasiProperties {
   id: number;
@@ -133,7 +126,6 @@ export interface RekomendasiValidasiItem {
   status_validasi: "Sangat Direkomendasikan" | "Terjangkau" | "Di luar jangkauan";
 }
 
-// ─── Delete modal ─────────────────────────────────────────────────────────────
 
 export interface DeleteModalState {
   isOpen: boolean;
@@ -142,7 +134,6 @@ export interface DeleteModalState {
   name: string;
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
 
 export type ToastType = "success" | "error" | "info";
 
@@ -152,6 +143,5 @@ export interface Toast {
   type: ToastType;
 }
 
-// ─── Tab ──────────────────────────────────────────────────────────────────────
 
 export type ActiveTab = "map" | "sppg" | "sekolah" | "coverage" | "rekomendasi";

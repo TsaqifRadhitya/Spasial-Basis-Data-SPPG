@@ -3,7 +3,6 @@ import { PoolClient } from 'pg';
 export async function up(client: PoolClient) {
   console.log('[migration] 005 - Creating table: sppg...');
 
-  // Handle legacy integer-id migration
   const exists = await client.query(`
     SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'sppg');
   `);
