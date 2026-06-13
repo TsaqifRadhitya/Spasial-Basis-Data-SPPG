@@ -33,6 +33,7 @@ export class SppgService {
         node_id: item.node_id,
         tipe: 'sppg',
         luas_coverage_km2: coverageMap.get(item.id) || 0,
+        kelurahan: item.kelurahan,
       },
     }));
 
@@ -54,10 +55,13 @@ export class SppgService {
         path_seq: item.path_seq,
       },
     }));
-
     return {
       type: 'FeatureCollection',
       features,
     };
+  }
+
+  static async deleteSppg(id: string) {
+    return await SppgRepository.delete(id);
   }
 }

@@ -81,3 +81,49 @@ export async function getGoogleRoute(
     return null;
   }
 }
+
+export interface DistanceMatrixElement {
+  status: string;
+  distance?: {
+    value: number; // meters
+    text: string;
+  };
+  duration?: {
+    value: number;
+    text: string;
+  };
+}
+
+/**
+ * Fetches batch routing distance and duration from the Google Maps Distance Matrix API.
+ * Returns null if the API key is not configured, or if the API call fails/returns no results.
+ */
+export async function getGoogleDistanceMatrix(
+  origin: { lat: number; lng: number },
+  destinations: { lat: number; lng: number }[]
+): Promise<DistanceMatrixElement[] | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || destinations.length === 0) {
+    return null;
+  }
+
+  try {
+    const destString = destinations.map(d => `${d.lat},${d.lng}`).join('|');
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${encodeURIComponent(destString)}&mode=driving&key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.warn(`[GoogleMaps] Distance Matrix API HTTP Error: ${response.statusText}`);
+      return null;
+    }
+    const data = await response.json();
+    if (data.status !== 'OK' || !data.rows || data.rows.length === 0) {
+      console.warn(`[GoogleMaps] Distance Matrix API returned status: ${data.status}`);
+      return null;
+    }
+
+    return data.rows[0].elements;
+  } catch (error) {
+    console.error('[GoogleMaps] Error fetching distance matrix:', error);
+    return null;
+  }
+}

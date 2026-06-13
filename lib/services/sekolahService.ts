@@ -55,10 +55,13 @@ export class SekolahService {
         path_seq: item.path_seq,
       },
     }));
-
     return {
       type: 'FeatureCollection',
       features,
     };
+  }
+
+  static async delete(id: string) {
+    return await SekolahRepository.delete(id);
   }
 }

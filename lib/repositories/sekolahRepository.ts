@@ -1,5 +1,5 @@
 import db, { query } from '../../database/db';
-import { getGoogleRoute } from '../utils/googleMaps';
+import { getGoogleRoute, getGoogleDistanceMatrix } from '../utils/googleMaps';
 
 export interface Sekolah {
   id?: string;
@@ -70,57 +70,71 @@ export class SekolahRepository {
     schoolLat: number,
     executor: { query: (text: string, params?: any[]) => Promise<any> } = db
   ) {
-    // 1. Fetch all SPPGs ordered by straight-line (Euclidean) distance to this school
+    // 1. Fetch candidate SPPGs whose straight-line (Euclidean) distance to this school is <= 6km.
+    // (A straight-line distance > 6km guarantees that the road distance is also > 6km, which saves API quota).
     const sppgRes = await executor.query(`
       SELECT id, ST_X(geom) as lng, ST_Y(geom) as lat,
              ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as straight_dist
       FROM sppg
+      WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 6000)
       ORDER BY straight_dist ASC
     `, [schoolLng, schoolLat]);
 
-    let assignedSppgId: string | null = null;
-    let routeWkt: string | null = null;
+    let bestSppgId: string | null = null;
+    let bestRouteWkt: string | null = null;
 
-    for (const sp of sppgRes.rows) {
-      const straightDist = parseFloat(sp.straight_dist);
-      if (straightDist > 6000) {
-        // Since SPPGs are ordered by straight distance, if this one is > 6km,
-        // all remaining ones will also exceed 6km.
-        break;
-      }
+    if (sppgRes.rows.length > 0) {
+      const candidates = sppgRes.rows;
+      const destinations = candidates.map((sp: any) => ({
+        lat: parseFloat(sp.lat),
+        lng: parseFloat(sp.lng)
+      }));
 
-      // Try Google Maps Driving Route
-      const route = await getGoogleRoute(
+      // Call Distance Matrix API in a single batch request to fetch driving distances
+      const elements = await getGoogleDistanceMatrix(
         { lat: schoolLat, lng: schoolLng },
-        { lat: parseFloat(sp.lat), lng: parseFloat(sp.lng) }
+        destinations
       );
 
-      if (route) {
-        if (route.distanceMeters <= 6000) {
-          assignedSppgId = sp.id;
-          if (route.coordinates.length >= 2) {
-            routeWkt = `LINESTRING(${route.coordinates.map(p => `${p[0]} ${p[1]}`).join(',')})`;
+      if (elements) {
+        let minRoadDistance = Infinity;
+        let chosenSppgIndex = -1;
+
+        for (let i = 0; i < elements.length; i++) {
+          const el = elements[i];
+          if (el.status === 'OK' && el.distance && el.distance.value <= 6000) {
+            if (el.distance.value < minRoadDistance) {
+              minRoadDistance = el.distance.value;
+              chosenSppgIndex = i;
+            }
           }
-          break; // Found the closest SPPG within 6km driving distance
         }
-      } else {
-        // Fallback: If Google Maps Directions API failed or is not configured, use straight-line distance
-        if (straightDist <= 6000) {
-          assignedSppgId = sp.id;
-          routeWkt = `LINESTRING(${schoolLng} ${schoolLat}, ${sp.lng} ${sp.lat})`;
-          break;
+
+        // If we found a valid SPPG, fetch the route geometry using Directions API (1 call only)
+        if (chosenSppgIndex !== -1) {
+          const chosenSppg = candidates[chosenSppgIndex];
+          bestSppgId = chosenSppg.id;
+
+          const route = await getGoogleRoute(
+            { lat: schoolLat, lng: schoolLng },
+            { lat: parseFloat(chosenSppg.lat), lng: parseFloat(chosenSppg.lng) }
+          );
+
+          if (route && route.coordinates.length >= 2) {
+            bestRouteWkt = `LINESTRING(${route.coordinates.map(p => `${p[0]} ${p[1]}`).join(',')})`;
+          }
         }
       }
     }
 
-    // Update school record in database
-    if (assignedSppgId) {
+    // Update school record in database with the closest SPPG by actual road distance
+    if (bestSppgId) {
       await executor.query(`
         UPDATE sekolah
         SET id_sppg = $1,
             jalur_distribusi = ST_GeomFromText($2, 4326)
         WHERE id = $3
-      `, [assignedSppgId, routeWkt, schoolId]);
+      `, [bestSppgId, bestRouteWkt, schoolId]);
     } else {
       await executor.query(`
         UPDATE sekolah
@@ -148,7 +162,7 @@ export class SekolahRepository {
         (SELECT nama_kelurahan FROM kelurahan WHERE id = id_kelurahan) as nama_kelurahan,
         ST_X(geom) as longitude, ST_Y(geom) as latitude
     `, [sekolah.nama_sekolah, sekolah.jenjang, sekolah.alamat, sekolah.nama_kelurahan, sekolah.longitude, sekolah.latitude]);
-    
+
     const newSchool = res.rows[0];
 
     // Compute id_sppg and route
@@ -171,6 +185,53 @@ export class SekolahRepository {
     return updated.rows[0];
   }
 
+  static async reassignSchoolsForNewSppg(
+    newSppgId: string,
+    newSppgLng: number,
+    newSppgLat: number,
+    executor: { query: (text: string, params?: any[]) => Promise<any> } = db
+  ) {
+    // 1. Fetch schools within 6km straight-line (Euclidean) distance of the new SPPG
+    const schoolsRes = await executor.query(`
+      SELECT 
+        s.id, 
+        ST_X(s.geom) as lng, 
+        ST_Y(s.geom) as lat, 
+        s.id_sppg,
+        COALESCE(ST_Length(s.jalur_distribusi::geography), Infinity) as current_road_distance
+      FROM sekolah s
+      WHERE ST_DWithin(s.geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 6000)
+    `, [newSppgLng, newSppgLat]);
+
+    for (const school of schoolsRes.rows) {
+      const schoolLat = parseFloat(school.lat);
+      const schoolLng = parseFloat(school.lng);
+
+      // Fetch actual driving route to the new SPPG
+      const route = await getGoogleRoute(
+        { lat: schoolLat, lng: schoolLng },
+        { lat: newSppgLat, lng: newSppgLng }
+      );
+
+      if (route && route.distanceMeters <= 6000) {
+        const currentDistance = parseFloat(school.current_road_distance);
+        
+        // Reassign if:
+        // - The school was a Blank Spot (no SPPG, currentDistance is Infinity) OR
+        // - The new SPPG has a shorter actual driving road distance
+        if (!school.id_sppg || route.distanceMeters < currentDistance) {
+          const routeWkt = `LINESTRING(${route.coordinates.map((p: any) => `${p[0]} ${p[1]}`).join(',')})`;
+          await executor.query(`
+            UPDATE sekolah
+            SET id_sppg = $1,
+                jalur_distribusi = ST_GeomFromText($2, 4326)
+            WHERE id = $3
+          `, [newSppgId, routeWkt, school.id]);
+        }
+      }
+    }
+  }
+
   static async getSchoolRoute(id: string) {
     const res = await query(`
       SELECT 
@@ -181,5 +242,9 @@ export class SekolahRepository {
       WHERE s.id = $1 AND s.jalur_distribusi IS NOT NULL;
     `, [id]);
     return res.rows;
+  }
+
+  static async delete(id: string) {
+    await query(`DELETE FROM sekolah WHERE id = $1`, [id]);
   }
 }

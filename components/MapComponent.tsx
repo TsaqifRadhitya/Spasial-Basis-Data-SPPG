@@ -9,7 +9,7 @@ interface MapComponentProps {
   sekolahGeojson: any;
   kelurahanGeojson: any;
   rekomendasiGeojson: any;
-  jalanGeojson: any;
+  showJalan: boolean;
   selectedKelurahan: string | null;
   sppgRoutesGeojson?: any;
   selectedSppgId?: string | null;
@@ -17,6 +17,9 @@ interface MapComponentProps {
   sekolahRouteGeojson?: any;
   selectedSekolahId?: string | null;
   onSelectSekolah?: (id: string | null) => void;
+  selectedRekomendasiId?: string | null;
+  onSelectRekomendasi?: (id: string | null) => void;
+  rekomendasiValidasi?: any[];
 }
 
 export default function MapComponent({
@@ -24,7 +27,7 @@ export default function MapComponent({
   sekolahGeojson,
   kelurahanGeojson,
   rekomendasiGeojson,
-  jalanGeojson,
+  showJalan,
   selectedKelurahan,
   sppgRoutesGeojson,
   selectedSppgId,
@@ -32,6 +35,9 @@ export default function MapComponent({
   sekolahRouteGeojson,
   selectedSekolahId,
   onSelectSekolah,
+  selectedRekomendasiId,
+  onSelectRekomendasi,
+  rekomendasiValidasi,
 }: MapComponentProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -165,46 +171,31 @@ export default function MapComponent({
       }).addTo(map);
     }
 
-    // 1.5. Render Jaringan Jalan
-    if (jalanGeojson) {
-      layersRef.current.jalan = L.geoJSON(jalanGeojson, {
-        style: {
-          color: '#2C4B44',
-          weight: 1.5,
-          opacity: 0.35,
-        },
-        onEachFeature: (feature: any, layer: L.Layer) => {
-          const props = feature.properties;
-          layer.bindPopup(`
-            <div class="p-1 text-[#1C322D] font-sans">
-              <h4 class="font-bold text-xs text-[#1C322D] font-sans">Jaringan Jalan</h4>
-              <p class="text-xs text-slate-550 mt-1">ID: ${props.id || '-'}</p>
-            </div>
-          `);
-        },
-      }).addTo(map);
-    }
+    // 1.5. Render Jaringan Jalan (Thin Background Distribution Routes)
+    if (showJalan && sekolahGeojson) {
+      const allRoutesFeatures: any[] = [];
+      sekolahGeojson.features?.forEach((f: any) => {
+        if (f.properties?.jalur_distribusi) {
+          allRoutesFeatures.push({
+            type: 'Feature',
+            geometry: f.properties.jalur_distribusi,
+            properties: { sekolah_id: f.properties.id, tipe: 'distribusi_subtle' },
+          });
+        }
+      });
 
-    // 1.8. Render Selected SPPG routes to schools (<= 6km) – legacy API routes
-    if (sppgRoutesGeojson) {
-      layersRef.current.sppgRoutes = L.geoJSON(sppgRoutesGeojson, {
-        style: {
-          color: '#E0533C',
-          weight: 4.5,
-          opacity: 0.9,
-        },
-      }).addTo(map);
-    }
-
-    // 1.9. Render Selected School route to its SPPG – legacy API route
-    if (sekolahRouteGeojson) {
-      layersRef.current.sekolahRoute = L.geoJSON(sekolahRouteGeojson, {
-        style: {
-          color: '#8B5CF6',
-          weight: 5,
-          opacity: 0.9,
-        },
-      }).addTo(map);
+      if (allRoutesFeatures.length > 0) {
+        layersRef.current.jalan = L.geoJSON(
+          { type: 'FeatureCollection', features: allRoutesFeatures } as any,
+          {
+            style: {
+              color: '#8B5CF6',
+              weight: 1.2,
+              opacity: 0.45,
+            },
+          }
+        ).addTo(map);
+      }
     }
 
     // 1.85. Render jalur_distribusi from GeoJSON properties
@@ -259,28 +250,46 @@ export default function MapComponent({
           // Highlight if this school belongs to the selected SPPG
           const isUnderSelectedSppg = !!(selectedSppgId && props.id_sppg === selectedSppgId);
 
+          // Highlight if this school belongs to the selected recommendation cluster
+          let isUnderSelectedRekomendasi = false;
+          if (selectedRekomendasiId && isBlankSpot && rekomendasiValidasi) {
+            isUnderSelectedRekomendasi = rekomendasiValidasi.some(
+              (v: any) => v.nama_sekolah === props.nama && String(v.kluster_id) === selectedRekomendasiId
+            );
+          }
+
           const markerHtml = `
-            <div class="relative flex items-center justify-center w-6 h-6 rounded-full border border-[#1C322D] shadow-md transition-transform hover:scale-125
+            <div class="relative flex items-center justify-center w-7 h-7 rounded-full border border-[#1C322D] shadow-md transition-transform hover:scale-125
               ${
                 isSelected
                   ? 'bg-[#8B5CF6] text-white scale-125 border-[#1C322D] ring-4 ring-[#8B5CF6]/40'
                   : isUnderSelectedSppg
                   ? 'bg-[#E0533C] text-white scale-110 ring-4 ring-[#E0533C]/40'
+                  : isUnderSelectedRekomendasi
+                  ? 'bg-[#EBB552] text-[#1C322D] scale-110 ring-4 ring-[#EBB552]/40'
                   : isBlankSpot
                   ? 'bg-[#F1CDBE] text-[#1C322D]'
                   : 'bg-[#F8F3EE] text-[#1C322D]'
               }">
-              <span class="text-[9px] font-black">${props.jenjang}</span>
-              ${isBlankSpot && !isSelected && !isUnderSelectedSppg ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EBB552] opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#EBB552]"></span></span>' : ''}
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m4 6 8-4 8 4" />
+                <path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2" />
+                <path d="M14 22v-4a2 2 0 1 0-4 0v4" />
+                <path d="M18 5v17" />
+                <path d="M6 5v17" />
+                <circle cx="12" cy="9" r="2" />
+              </svg>
+              ${isBlankSpot && !isSelected && !isUnderSelectedSppg && !isUnderSelectedRekomendasi ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EBB552] opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#EBB552]"></span></span>' : ''}
               ${isUnderSelectedSppg && !isSelected ? '<span class="absolute -inset-1 rounded-full border-2 border-[#E0533C]/60 animate-ping opacity-70"></span>' : ''}
+              ${isUnderSelectedRekomendasi && !isSelected ? '<span class="absolute -inset-1 rounded-full border-2 border-[#EBB552]/60 animate-ping opacity-70"></span>' : ''}
             </div>
           `;
 
           const customIcon = L.divIcon({
             html: markerHtml,
             className: 'custom-school-icon',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
           });
 
           const marker = L.marker(latlng, { icon: customIcon });
@@ -332,8 +341,9 @@ export default function MapComponent({
           const markerHtml = `
             <div class="flex items-center justify-center w-9 h-9 rounded-xl border border-[#1C322D] shadow-lg shadow-[#1C322D]/35 hover:scale-110 transition-transform
               ${isSelected ? 'bg-[#1C322D] text-[#EBB552]' : 'bg-[#EBB552] text-[#1C322D]'}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             </div>
           `;
@@ -373,10 +383,18 @@ export default function MapComponent({
     if (rekomendasiGeojson) {
       layersRef.current.rekomendasi = L.geoJSON(rekomendasiGeojson, {
         pointToLayer: (feature: any, latlng: L.LatLng) => {
+          const props = feature.properties;
+          const isSelected = selectedRekomendasiId === String(props.kluster_id) || selectedRekomendasiId === String(props.id);
+
           // Circular marker with ping animation
           const markerHtml = `
-            <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-[#F1CDBE] border border-[#1C322D] shadow-lg hover:scale-115 transition-transform">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 text-[#1C322D] animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <div class="relative flex items-center justify-center w-8 h-8 rounded-full border border-[#1C322D] shadow-lg hover:scale-115 transition-transform
+              ${
+                isSelected
+                  ? 'bg-[#1C322D] text-[#EBB552] scale-110 ring-4 ring-[#EBB552]/40 border-[#EBB552]'
+                  : 'bg-[#F1CDBE] text-[#1C322D]'
+              }">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="8" x2="12" y2="16"/>
                 <line x1="8" y1="12" x2="16" y2="12"/>
@@ -392,7 +410,29 @@ export default function MapComponent({
             iconAnchor: [16, 16],
           });
 
-          return L.marker(latlng, { icon: customIcon });
+          const marker = L.marker(latlng, { icon: customIcon });
+
+          if (onSelectRekomendasi) {
+            marker.on('click', () => {
+              onSelectRekomendasi(isSelected ? null : String(props.kluster_id));
+            });
+          }
+
+          if (isSelected) {
+            const circle = L.circle(latlng, {
+              radius: 6000,
+              color: '#1C322D',
+              fillColor: '#F1CDBE',
+              fillOpacity: 0.08,
+              weight: 1.5,
+              dashArray: '4, 4',
+              interactive: false,
+            });
+
+            return L.layerGroup([circle, marker]);
+          }
+
+          return marker;
         },
         onEachFeature: (feature: any, layer: L.Layer) => {
           const props = feature.properties;
@@ -409,7 +449,7 @@ export default function MapComponent({
         },
       }).addTo(map);
     }
-  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, jalanGeojson, selectedKelurahan, sppgRoutesGeojson, selectedSppgId, sekolahRouteGeojson, selectedSekolahId]);
+  }, [sppgGeojson, sekolahGeojson, kelurahanGeojson, rekomendasiGeojson, showJalan, selectedKelurahan, sppgRoutesGeojson, selectedSppgId, sekolahRouteGeojson, selectedSekolahId, selectedRekomendasiId, rekomendasiValidasi]);
 
   return <div ref={mapContainerRef} className="w-full h-full bg-[#F8F3EE] rounded-2xl overflow-hidden" />;
 }
