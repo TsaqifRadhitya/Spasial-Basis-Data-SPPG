@@ -558,32 +558,7 @@ export default function MapComponent({
         </div>
       `);
 
-      // For SPPG draft location: show simulation preview circles (double buffer)
-      if (!isSekolah) {
-        const previewCircle6k = L.circle(latlng, {
-          radius: 6000,
-          color: "#EC4899",
-          fillColor: "#EC4899",
-          fillOpacity: 0.04,
-          weight: 1.5,
-          dashArray: "5, 5",
-          interactive: false,
-        });
-        const previewCircle3k = L.circle(latlng, {
-          radius: 3000,
-          color: "#EC4899",
-          fillColor: "#EC4899",
-          fillOpacity: 0.09,
-          weight: 1.5,
-          dashArray: "3, 3",
-          interactive: false,
-        });
-        previewCircle6k.addTo(map);
-        previewCircle3k.addTo(map);
-        layersRef.current.pickedLocation = L.layerGroup([previewCircle6k, previewCircle3k, marker]);
-      } else {
-        layersRef.current.pickedLocation = marker;
-      }
+      layersRef.current.pickedLocation = marker;
     }
   }, [
     sppgGeojson,
