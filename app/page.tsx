@@ -295,9 +295,9 @@ export default function Dashboard() {
   const coveragePercent = totalSchools > 0 ? Math.round(((totalSchools - blankSpotsCount) / totalSchools) * 100) : 0;
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8F3EE] text-[#1C322D] antialiased font-sans">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-[#F8F3EE] text-[#1C322D] antialiased font-sans">
       {/* Sidebar Controls */}
-      <aside className="w-full lg:w-[480px] p-6 bg-white border-b lg:border-b-0 lg:border-r border-[#1C322D]/15 flex flex-col justify-between shrink-0 shadow-lg z-10">
+      <aside className="w-full lg:w-[480px] h-full p-6 bg-white border-b lg:border-b-0 lg:border-r border-[#1C322D]/15 flex flex-col justify-between shrink-0 shadow-lg z-10 overflow-y-auto">
         <div>
           {/* Brand Header */}
           <div className="mb-8">
@@ -367,7 +367,7 @@ export default function Dashboard() {
           </nav>
 
           {/* Dynamic Tab Contents */}
-          <div className="space-y-4 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto pr-1">
+          <div className="space-y-4 pr-1">
             {activeTab === 'map' && (
               <div className="space-y-4">
                 <div className="p-4 bg-white border border-[#1C322D]/15 rounded-2xl space-y-3 shadow-md text-[#1C322D]">
@@ -883,7 +883,7 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Map View */}
-      <main className="flex-1 min-h-[500px] lg:min-h-screen relative p-6 flex flex-col">
+      <main className="flex-1 h-full overflow-hidden relative p-6 flex flex-col">
         <div className="flex-1 bg-white border border-[#1C322D]/15 rounded-2xl relative overflow-hidden flex shadow-lg">
           <MapComponent
             sppgGeojson={showSppg ? sppgData : null}
