@@ -892,6 +892,15 @@ export default function Dashboard() {
             rekomendasiGeojson={showRekomendasi ? rekomendasi : null}
             showJalan={showJalan}
             selectedKelurahan={selectedKelurahan}
+            onSelectKelurahan={(nama) => {
+              const nextKel = selectedKelurahan === nama ? null : nama;
+              setSelectedKelurahan(nextKel);
+              if (nextKel) {
+                setSelectedSppgId(null);
+                setSelectedSekolahId(null);
+                setSelectedRekomendasiId(null);
+              }
+            }}
             sppgRoutesGeojson={sppgRoutesData}
             selectedSppgId={selectedSppgId}
             onSelectSppg={(id) => {

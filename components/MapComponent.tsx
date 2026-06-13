@@ -11,6 +11,7 @@ interface MapComponentProps {
   rekomendasiGeojson: any;
   showJalan: boolean;
   selectedKelurahan: string | null;
+  onSelectKelurahan?: (nama: string | null) => void;
   sppgRoutesGeojson?: any;
   selectedSppgId?: string | null;
   onSelectSppg?: (id: string | null) => void;
@@ -29,6 +30,7 @@ export default function MapComponent({
   rekomendasiGeojson,
   showJalan,
   selectedKelurahan,
+  onSelectKelurahan,
   sppgRoutesGeojson,
   selectedSppgId,
   onSelectSppg,
@@ -144,19 +146,12 @@ export default function MapComponent({
         onEachFeature: (feature: any, layer: L.Layer) => {
           const props = feature.properties;
           if (props.tipe === 'kelurahan') {
-            layer.bindPopup(`
-              <div class="p-1 text-[#1C322D] font-sans">
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-[#1C322D]/10 text-[#1C322D]">
-                  Kelurahan (Sumbersari)
-                </span>
-                <h3 class="font-bold text-sm text-[#1C322D] font-sans mt-1.5">Kel. ${props.nama}</h3>
-                <p class="text-xs mt-1 font-sans">Total Sekolah: <span class="font-bold text-slate-800">${props.total_sekolah}</span></p>
-                <div class="flex items-center gap-2 mt-2 text-xs">
-                  <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold font-sans">${props.terlayani_count} Terlayani</span>
-                  <span class="px-1.5 py-0.5 rounded bg-[#F1CDBE] text-[#1C322D] font-bold font-sans">${props.blank_spot_count} Blank Spot</span>
-                </div>
-              </div>
-            `);
+            layer.on('click', () => {
+              if (onSelectKelurahan) {
+                const isAlreadySelected = selectedKelurahan === props.nama;
+                onSelectKelurahan(isAlreadySelected ? null : props.nama);
+              }
+            });
           } else {
             layer.bindPopup(`
               <div class="p-1 text-[#1C322D] font-sans">
