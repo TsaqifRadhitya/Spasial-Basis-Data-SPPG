@@ -3,7 +3,6 @@ import { createClient } from '../lib/utils/pool';
 import { up as migration001 } from './migrations/001_extensions';
 import { up as migration002 } from './migrations/002_kecamatan';
 import { up as migration003 } from './migrations/003_kelurahan';
-import { up as migration004 } from './migrations/004_jaringan_jalan';
 import { up as migration005 } from './migrations/005_sppg';
 import { up as migration006 } from './migrations/006_sekolah';
 
@@ -11,7 +10,6 @@ const migrations = [
   migration001,
   migration002,
   migration003,
-  migration004,
   migration005,
   migration006,
 ];

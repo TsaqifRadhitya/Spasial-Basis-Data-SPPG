@@ -1,12 +1,12 @@
-import { query } from '../../database/db';
+import db, { query } from '../../database/db';
+import { getGoogleRoute } from '../utils/googleMaps';
 
 export interface Sekolah {
-  id?: number;
+  id?: string;
   nama_sekolah: string;
   jenjang: 'SD' | 'SMP' | 'SMA' | 'SMK';
   alamat: string;
   nama_kelurahan: string;
-  node_id?: number;
   latitude: number;
   longitude: number;
 }
@@ -15,7 +15,7 @@ export class SekolahRepository {
   static async getAll(kelurahan?: string) {
     let sql = `
       SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
-        k.nama_kelurahan, s.node_id, s.id_sppg,
+        k.nama_kelurahan, s.id_sppg,
         ST_AsGeoJSON(s.jalur_distribusi)::json AS jalur_distribusi,
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude
       FROM sekolah s
@@ -32,132 +32,108 @@ export class SekolahRepository {
   }
 
   static async getBlankSpots() {
-    try {
-      const res = await query(`
-        SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
-          k.nama_kelurahan, s.node_id, s.id_sppg,
-          ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
-          COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
-        FROM sekolah s
-        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
-        WHERE s.id_sppg IS NULL
-        ORDER BY kluster_id, s.id
-      `);
-      return res.rows;
-    } catch (e) {
-      console.warn('getBlankSpots query failed:', e);
-      const res = await query(`
-        SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
-          k.nama_kelurahan, s.node_id, s.id_sppg,
-          ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
-          COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
-        FROM sekolah s
-        LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
-        WHERE s.id_sppg IS NULL
-        ORDER BY kluster_id, s.id
-      `);
-      return res.rows;
+    const res = await query(`
+      SELECT s.id, s.nama_satuan_pendidikan AS nama_sekolah, s.jenjang, s.alamat, 
+        k.nama_kelurahan, s.id_sppg,
+        ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
+        COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
+      FROM sekolah s
+      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      WHERE s.id_sppg IS NULL
+      ORDER BY kluster_id, s.id
+    `);
+    return res.rows;
+  }
+
+  /**
+   * Recalculates SPPG assignment and distribution routes for all schools.
+   */
+  static async updateSchoolSppgIds() {
+    const schools = await query(`SELECT id, ST_X(geom) as lng, ST_Y(geom) as lat FROM sekolah`);
+    for (const school of schools.rows) {
+      await this.assignSppgAndRouteForSchool(
+        school.id,
+        parseFloat(school.lng),
+        parseFloat(school.lat)
+      );
     }
   }
 
-  static async findClosestNode(lng: number, lat: number): Promise<number | null> {
-    const res = await query(`
-      SELECT node_id FROM (
-        SELECT source AS node_id, geom <-> ST_SetSRID(ST_MakePoint($1, $2), 4326) AS dist FROM jaringan_jalan
-        UNION ALL
-        SELECT target, geom <-> ST_SetSRID(ST_MakePoint($1, $2), 4326) AS dist FROM jaringan_jalan
-      ) AS sub 
-      ORDER BY dist 
-      LIMIT 1
-    `, [lng, lat]);
-    return res.rows[0]?.node_id || null;
-  }
+  /**
+   * Pipeline to assign a school to the closest SPPG (max 6km driving distance)
+   * and save the Google Maps overview polyline (decoded) as its jalur_distribusi geometry.
+   * If Google Maps API key is missing or fails, falls back to straight-line Euclidean distance/geometry.
+   */
+  static async assignSppgAndRouteForSchool(
+    schoolId: string,
+    schoolLng: number,
+    schoolLat: number,
+    executor: { query: (text: string, params?: any[]) => Promise<any> } = db
+  ) {
+    // 1. Fetch all SPPGs ordered by straight-line (Euclidean) distance to this school
+    const sppgRes = await executor.query(`
+      SELECT id, ST_X(geom) as lng, ST_Y(geom) as lat,
+             ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as straight_dist
+      FROM sppg
+      ORDER BY straight_dist ASC
+    `, [schoolLng, schoolLat]);
 
-  static async updateSchoolSppgIds() {
-    try {
-      await query(`UPDATE sekolah SET id_sppg = NULL, jalur_distribusi = NULL;`);
-      await query(`
-        WITH school_sppg_costs AS (
-          SELECT 
-            s.id AS sekolah_id,
-            sp.id AS sppg_id,
-            dd.agg_cost AS cost,
-            ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY dd.agg_cost ASC) as rn
-          FROM sekolah s
-          CROSS JOIN sppg sp
-          JOIN LATERAL (
-            SELECT agg_cost 
-            FROM pgr_drivingDistance(
-              'SELECT id, source, target, cost FROM jaringan_jalan',
-              sp.node_id,
-              6000,
-              false
-            ) AS dd
-            WHERE dd.node = s.node_id
-          ) dd ON true
-          WHERE dd.agg_cost <= 6000
-        )
-        UPDATE sekolah s
-        SET id_sppg = ssc.sppg_id
-        FROM school_sppg_costs ssc
-        WHERE s.id = ssc.sekolah_id AND ssc.rn = 1;
-      `);
+    let assignedSppgId: string | null = null;
+    let routeWkt: string | null = null;
 
-      // Compute jalur_distribusi using Dijkstra for each school with an assigned SPPG
-      await query(`
-        UPDATE sekolah s
-        SET jalur_distribusi = (
-          SELECT ST_LineMerge(ST_Collect(j.geom ORDER BY r.path_seq))
-          FROM pgr_dijkstra(
-            'SELECT id, source, target, cost FROM jaringan_jalan',
-            sp.node_id,
-            s.node_id,
-            false
-          ) AS r
-          JOIN jaringan_jalan j ON r.edge = j.id
-        )
-        FROM sppg sp
-        WHERE s.id_sppg = sp.id
-          AND s.node_id IS NOT NULL
-          AND sp.node_id IS NOT NULL;
-      `);
-    } catch (e) {
-      console.warn('pgRouting failed to update school id_sppg, using spatial fallback:', e);
-      try {
-        await query(`
-          WITH school_sppg_distances AS (
-            SELECT 
-              s.id AS sekolah_id,
-              sp.id AS sppg_id,
-              ST_Distance(s.geom::geography, sp.geom::geography) as dist,
-              ROW_NUMBER() OVER (PARTITION BY s.id ORDER BY ST_Distance(s.geom::geography, sp.geom::geography) ASC) as rn
-            FROM sekolah s
-            CROSS JOIN sppg sp
-            WHERE ST_Distance(s.geom::geography, sp.geom::geography) <= 6000
-          )
-          UPDATE sekolah s
-          SET id_sppg = ssd.sppg_id
-          FROM school_sppg_distances ssd
-          WHERE s.id = ssd.sekolah_id AND ssd.rn = 1;
-        `);
-
-        // Fallback jalur_distribusi: straight line SPPG -> sekolah
-        await query(`
-          UPDATE sekolah s
-          SET jalur_distribusi = ST_MakeLine(sp.geom, s.geom)
-          FROM sppg sp
-          WHERE s.id_sppg = sp.id;
-        `);
-      } catch (err) {
-        console.error('Failed to update school id_sppg in fallback:', err);
+    for (const sp of sppgRes.rows) {
+      const straightDist = parseFloat(sp.straight_dist);
+      if (straightDist > 6000) {
+        // Since SPPGs are ordered by straight distance, if this one is > 6km,
+        // all remaining ones will also exceed 6km.
+        break;
       }
+
+      // Try Google Maps Driving Route
+      const route = await getGoogleRoute(
+        { lat: schoolLat, lng: schoolLng },
+        { lat: parseFloat(sp.lat), lng: parseFloat(sp.lng) }
+      );
+
+      if (route) {
+        if (route.distanceMeters <= 6000) {
+          assignedSppgId = sp.id;
+          if (route.coordinates.length >= 2) {
+            routeWkt = `LINESTRING(${route.coordinates.map(p => `${p[0]} ${p[1]}`).join(',')})`;
+          }
+          break; // Found the closest SPPG within 6km driving distance
+        }
+      } else {
+        // Fallback: If Google Maps Directions API failed or is not configured, use straight-line distance
+        if (straightDist <= 6000) {
+          assignedSppgId = sp.id;
+          routeWkt = `LINESTRING(${schoolLng} ${schoolLat}, ${sp.lng} ${sp.lat})`;
+          break;
+        }
+      }
+    }
+
+    // Update school record in database
+    if (assignedSppgId) {
+      await executor.query(`
+        UPDATE sekolah
+        SET id_sppg = $1,
+            jalur_distribusi = ST_GeomFromText($2, 4326)
+        WHERE id = $3
+      `, [assignedSppgId, routeWkt, schoolId]);
+    } else {
+      await executor.query(`
+        UPDATE sekolah
+        SET id_sppg = NULL,
+            jalur_distribusi = NULL
+        WHERE id = $1
+      `, [schoolId]);
     }
   }
 
   static async create(sekolah: Sekolah) {
-    const node_id = sekolah.node_id || await this.findClosestNode(sekolah.longitude, sekolah.latitude);
     const res = await query(`
-      INSERT INTO sekolah (nama_satuan_pendidikan, jenjang, alamat, id_kelurahan, node_id, geom)
+      INSERT INTO sekolah (nama_satuan_pendidikan, jenjang, alamat, id_kelurahan, geom)
       VALUES (
         $1, 
         $2::jenjang_type, 
@@ -166,85 +142,43 @@ export class SekolahRepository {
           (SELECT id FROM kelurahan WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($5, $6), 4326)) LIMIT 1),
           (SELECT id FROM kelurahan WHERE LOWER(nama_kelurahan) = LOWER($4) LIMIT 1)
         ), 
-        $7, 
         ST_SetSRID(ST_MakePoint($5, $6), 4326)
       )
       RETURNING id, nama_satuan_pendidikan as nama_sekolah, jenjang, alamat, 
         (SELECT nama_kelurahan FROM kelurahan WHERE id = id_kelurahan) as nama_kelurahan,
-        node_id, ST_X(geom) as longitude, ST_Y(geom) as latitude
-    `, [sekolah.nama_sekolah, sekolah.jenjang, sekolah.alamat, sekolah.nama_kelurahan, sekolah.longitude, sekolah.latitude, node_id]);
+        ST_X(geom) as longitude, ST_Y(geom) as latitude
+    `, [sekolah.nama_sekolah, sekolah.jenjang, sekolah.alamat, sekolah.nama_kelurahan, sekolah.longitude, sekolah.latitude]);
     
-    // Compute id_sppg and jalur_distribusi via the same pipeline as seeder
-    await this.updateSchoolSppgIds();
+    const newSchool = res.rows[0];
+
+    // Compute id_sppg and route
+    await this.assignSppgAndRouteForSchool(
+      newSchool.id,
+      parseFloat(newSchool.longitude),
+      parseFloat(newSchool.latitude)
+    );
 
     // Return the latest data including id_sppg and jalur_distribusi as GeoJSON
     const updated = await query(`
       SELECT s.id, s.nama_satuan_pendidikan as nama_sekolah, s.jenjang, s.alamat,
-        k.nama_kelurahan, s.node_id, s.id_sppg,
+        k.nama_kelurahan, s.id_sppg,
         ST_AsGeoJSON(s.jalur_distribusi)::json AS jalur_distribusi,
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude
       FROM sekolah s
       LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
       WHERE s.id = $1
-    `, [res.rows[0].id]);
+    `, [newSchool.id]);
     return updated.rows[0];
   }
 
   static async getSchoolRoute(id: string) {
-    const schoolRes = await query(`
-      SELECT s.id AS sekolah_id, s.node_id AS school_node_id, s.id_sppg, sp.node_id AS sppg_node_id
-      FROM sekolah s
-      LEFT JOIN sppg sp ON s.id_sppg = sp.id
-      WHERE s.id = $1
-    `, [id]);
-    
-    if (schoolRes.rows.length === 0) return [];
-    
-    const school = schoolRes.rows[0];
-    if (!school.id_sppg) return [];
-
-    const schoolNodeId = school.school_node_id;
-    const sppgNodeId = school.sppg_node_id;
-
-    if (!schoolNodeId || !sppgNodeId) {
-      return this.getSchoolRouteFallback(id);
-    }
-
-    try {
-      const res = await query(`
-        SELECT 
-          r.edge,
-          r.path_seq,
-          ST_AsGeoJSON(j.geom)::json AS geometry
-        FROM pgr_dijkstra(
-          'SELECT id, source, target, cost FROM jaringan_jalan',
-          $1::integer,
-          $2::integer,
-          false
-        ) AS r
-        JOIN jaringan_jalan j ON r.edge = j.id
-        ORDER BY r.path_seq;
-      `, [sppgNodeId, schoolNodeId]);
-
-      if (res.rows.length === 0) {
-        return this.getSchoolRouteFallback(id);
-      }
-      return res.rows;
-    } catch (e) {
-      console.warn('pgRouting failed in getSchoolRoute, using straight-line fallback:', e);
-      return this.getSchoolRouteFallback(id);
-    }
-  }
-
-  static async getSchoolRouteFallback(id: string) {
     const res = await query(`
       SELECT 
         -1 AS edge,
         1 AS path_seq,
-        ST_AsGeoJSON(ST_MakeLine(sp.geom, s.geom))::json AS geometry
+        ST_AsGeoJSON(s.jalur_distribusi)::json AS geometry
       FROM sekolah s
-      JOIN sppg sp ON s.id_sppg = sp.id
-      WHERE s.id = $1;
+      WHERE s.id = $1 AND s.jalur_distribusi IS NOT NULL;
     `, [id]);
     return res.rows;
   }

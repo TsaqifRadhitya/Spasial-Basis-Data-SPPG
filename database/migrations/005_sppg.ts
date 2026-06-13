@@ -24,15 +24,14 @@ export async function up(client: PoolClient) {
           alamat       VARCHAR(255),
           geom         GEOMETRY(Point, 4326) NOT NULL,
           id_kelurahan VARCHAR(50) REFERENCES kelurahan(id) ON DELETE SET NULL,
-          node_id      INTEGER,
           created_at   TIMESTAMP DEFAULT NOW()
         );
       `);
 
       await client.query(`
-        INSERT INTO sppg (id, nama_sppg, alamat, geom, node_id, created_at, id_kelurahan)
+        INSERT INTO sppg (id, nama_sppg, alamat, geom, created_at, id_kelurahan)
         SELECT
-          id::varchar, nama_sppg, alamat, geom, node_id, created_at,
+          id::varchar, nama_sppg, alamat, geom, created_at,
           (SELECT id FROM kelurahan WHERE ST_Contains(geom, sppg_old.geom) LIMIT 1)
         FROM sppg_old;
       `);
@@ -47,7 +46,6 @@ export async function up(client: PoolClient) {
         alamat       VARCHAR(255),
         geom         GEOMETRY(Point, 4326) NOT NULL,
         id_kelurahan VARCHAR(50) REFERENCES kelurahan(id) ON DELETE SET NULL,
-        node_id      INTEGER,
         created_at   TIMESTAMP DEFAULT NOW()
       );
     `);

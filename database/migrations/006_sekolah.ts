@@ -27,15 +27,14 @@ export async function up(client: PoolClient) {
           id_kelurahan           VARCHAR(50) REFERENCES kelurahan(id) ON DELETE SET NULL,
           id_sppg                VARCHAR(50) REFERENCES sppg(id) ON DELETE SET NULL,
           jalur_distribusi       GEOMETRY,
-          node_id                INTEGER,
           created_at             TIMESTAMP DEFAULT NOW()
         );
       `);
 
       await client.query(`
-        INSERT INTO sekolah (id, nama_satuan_pendidikan, jenjang, alamat, geom, node_id, created_at, id_kelurahan)
+        INSERT INTO sekolah (id, nama_satuan_pendidikan, jenjang, alamat, geom, created_at, id_kelurahan)
         SELECT
-          id::varchar, nama_sekolah, jenjang::jenjang_type, alamat, geom, node_id, created_at,
+          id::varchar, nama_sekolah, jenjang::jenjang_type, alamat, geom, created_at,
           (SELECT id FROM kelurahan WHERE ST_Contains(geom, sekolah_old.geom) LIMIT 1)
         FROM sekolah_old;
       `);
@@ -53,7 +52,6 @@ export async function up(client: PoolClient) {
         id_kelurahan           VARCHAR(50) REFERENCES kelurahan(id) ON DELETE SET NULL,
         id_sppg                VARCHAR(50) REFERENCES sppg(id) ON DELETE SET NULL,
         jalur_distribusi       GEOMETRY,
-        node_id                INTEGER,
         created_at             TIMESTAMP DEFAULT NOW()
       );
     `);
