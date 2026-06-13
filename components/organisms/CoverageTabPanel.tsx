@@ -47,14 +47,18 @@ export default function CoverageTabPanel({ coverageStats }: CoverageTabPanelProp
                 <p className="font-semibold text-[#1C322D] font-sans">
                   {item.nama_sekolah}
                 </p>
-                <p className="text-[10px] text-[#1C322D]/70 font-mono">
-                  ke: {item.nama_sppg ?? "–"}
-                </p>
+                {item.status_cakupan !== "Blank Spot" && (
+                  <p className="text-[10px] text-[#1C322D]/70 font-mono">
+                    ke: {item.nama_sppg ?? "–"}
+                  </p>
+                )}
               </div>
               <div className="text-right">
-                <p className="font-bold text-[#1C322D] font-mono">
-                  {Math.round(item.jarak_tempuh_meter)} m
-                </p>
+                {item.status_cakupan !== "Blank Spot" && (
+                  <p className="font-bold text-[#1C322D] font-mono">
+                    {Math.round(item.jarak_tempuh_meter)} m
+                  </p>
+                )}
                 <span
                   className={`text-[9px] font-bold px-1 rounded font-mono border ${
                     item.status_cakupan === "Blank Spot"

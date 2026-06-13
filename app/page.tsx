@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 // Hooks
@@ -41,8 +41,7 @@ import MapOverlayPanel from "@/components/organisms/MapOverlayPanel";
 import DeleteConfirmModal from "@/components/organisms/DeleteConfirmModal";
 import ToastContainer from "@/components/organisms/ToastContainer";
 
-// Types
-import type { ActiveTab, DeleteModalState, Toast, ToastType, SekolahFeature } from "@/types/dashboard";
+import type { ActiveTab, DeleteModalState, Toast, ToastType, SekolahFeature, GeoJSONFeature, KelurahanFeatureProperties } from "@/types/dashboard";
 import type { SppgForm } from "@/modules/sppg/types";
 import type { SekolahForm } from "@/modules/sekolah/types";
 
@@ -77,6 +76,133 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ),
 });
 
+const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {activeTab === "map" && (
+        <>
+          {/* Layer Customizer Skeleton */}
+          <div className="p-5 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
+            <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+            <div className="space-y-3 pt-2">
+              <div className="h-10 bg-slate-100 rounded-xl"></div>
+              <div className="h-10 bg-slate-100 rounded-xl"></div>
+              <div className="h-24 bg-slate-100 rounded-xl"></div>
+            </div>
+          </div>
+          {/* Kelurahan Stats Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "sppg" && (
+        <>
+          {/* Form SPPG Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+            <div className="space-y-3">
+              <div className="h-8 bg-slate-100 rounded-lg"></div>
+              <div className="h-8 bg-slate-100 rounded-lg"></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+              </div>
+              <div className="h-9 bg-slate-200 rounded-xl"></div>
+            </div>
+          </div>
+          {/* List SPPG Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-slate-100 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "sekolah" && (
+        <>
+          {/* Form Sekolah Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-5 bg-slate-200 rounded w-1/3"></div>
+            <div className="space-y-3">
+              <div className="h-8 bg-slate-100 rounded-lg"></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+              </div>
+              <div className="h-8 bg-slate-100 rounded-lg"></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+                <div className="h-8 bg-slate-100 rounded-lg"></div>
+              </div>
+              <div className="h-9 bg-slate-200 rounded-xl"></div>
+            </div>
+          </div>
+          {/* List Sekolah Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-slate-100 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "coverage" && (
+        <>
+          {/* Coverage Stats Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
+            <div className="h-5 bg-slate-200 rounded w-1/2"></div>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 bg-slate-100 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-4">
+            <div className="h-5 bg-slate-200 rounded w-1/2"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-slate-100 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "rekomendasi" && (
+        <>
+          {/* Rekomendasi Panel Skeleton */}
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-5 bg-slate-200 rounded w-1/2"></div>
+            <div className="h-12 bg-slate-200 rounded-xl"></div>
+          </div>
+          <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+            <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-14 bg-slate-100 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("map");
 
@@ -94,13 +220,119 @@ export default function Dashboard() {
   const [selectedRekomendasiId, setSelectedRekomendasiId] = useState<string | null>(null);
 
   // Queries
-  const { data: sppgData = null } = useSppgQuery();
-  const { data: sekolahData = null } = useSekolahQuery();
-  const { data: kelurahanBoundaries = null } = useKelurahanGeojsonQuery();
-  const { data: rekomendasi = null } = useRekomendasiQuery();
-  const { data: kelurahanStats = [] } = useKelurahanStatsQuery();
-  const { data: coverageStats = { panjangJalan: [], drivingDistances: [] } } = useCoverageStatsQuery();
-  const { data: rekomendasiValidasi = [] } = useRekomendasiValidasiQuery();
+  const { data: sppgData = null, isLoading: isLoadingSppg } = useSppgQuery();
+  const { data: sekolahData = null, isLoading: isLoadingSekolah } = useSekolahQuery();
+  const { data: kelurahanBoundaries = null, isLoading: isLoadingBoundaries } = useKelurahanGeojsonQuery();
+  const { data: rekomendasi = null, isLoading: isLoadingRekomendasi } = useRekomendasiQuery();
+  const { data: kelurahanStats = [], isLoading: isLoadingKelurahanStats } = useKelurahanStatsQuery();
+  const { data: coverageStats = { panjangJalan: [], drivingDistances: [] }, isLoading: isLoadingCoverage } = useCoverageStatsQuery();
+  const { data: rekomendasiValidasi = [], isLoading: isLoadingValidasi } = useRekomendasiValidasiQuery();
+
+  const isDataLoading =
+    isLoadingSppg ||
+    isLoadingSekolah ||
+    isLoadingBoundaries ||
+    isLoadingRekomendasi ||
+    isLoadingKelurahanStats ||
+    isLoadingCoverage ||
+    isLoadingValidasi;
+
+  // Sub-filters states for map customize layout
+  const [activeKecamatans, setActiveKecamatans] = useState<string[]>([]);
+  const [activeKelurahans, setActiveKelurahans] = useState<string[]>([]);
+  const [activeJenjangs, setActiveJenjangs] = useState<string[]>(["SD", "SMP", "SMA", "SMK"]);
+
+  // Extract all unique Kecamatan and Kelurahan names
+  const allKecamatans = useMemo(() => {
+    if (!kelurahanBoundaries) return [];
+    return Array.from(
+      new Set<string>(
+        kelurahanBoundaries.features
+          .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kecamatan")
+          .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
+      )
+    ).sort();
+  }, [kelurahanBoundaries]);
+
+  const allKelurahans = useMemo(() => {
+    if (!kelurahanBoundaries) return [];
+    return Array.from(
+      new Set<string>(
+        kelurahanBoundaries.features
+          .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kelurahan")
+          .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
+      )
+    ).sort();
+  }, [kelurahanBoundaries]);
+
+  // Initialize active sub-filters when data is loaded
+  useEffect(() => {
+    if (kelurahanBoundaries) {
+      const kecs: string[] = Array.from(
+        new Set<string>(
+          kelurahanBoundaries.features
+            .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kecamatan")
+            .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
+        )
+      ).sort();
+      const kels: string[] = Array.from(
+        new Set<string>(
+          kelurahanBoundaries.features
+            .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kelurahan")
+            .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
+        )
+      ).sort();
+      Promise.resolve().then(() => {
+        setActiveKecamatans(prev => prev.length === 0 ? kecs : prev);
+        setActiveKelurahans(prev => prev.length === 0 ? kels : prev);
+      });
+    }
+  }, [kelurahanBoundaries]);
+
+  // Filtered GeoJSON data based on active selection
+  const filteredKelurahan = useMemo(() => {
+    if (!kelurahanBoundaries) return null;
+    return {
+      ...kelurahanBoundaries,
+      features: kelurahanBoundaries.features.filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => {
+        if (f.properties.tipe === "kecamatan") {
+          return activeKecamatans.includes(f.properties.nama);
+        } else {
+          return activeKelurahans.includes(f.properties.nama);
+        }
+      })
+    };
+  }, [kelurahanBoundaries, activeKecamatans, activeKelurahans]);
+
+  const filteredSchools = useMemo(() => {
+    if (!sekolahData) return null;
+    return {
+      ...sekolahData,
+      features: sekolahData.features.filter((f: SekolahFeature) => 
+        activeJenjangs.includes(f.properties.jenjang)
+      )
+    };
+  }, [sekolahData, activeJenjangs]);
+
+  // Auto-clear selection state if selected item is filtered out
+  useEffect(() => {
+    if (selectedSekolahId && sekolahData) {
+      const selectedSchool = sekolahData.features.find((f: SekolahFeature) => f.properties.id === selectedSekolahId);
+      if (selectedSchool && !activeJenjangs.includes(selectedSchool.properties.jenjang)) {
+        Promise.resolve().then(() => {
+          setSelectedSekolahId(null);
+        });
+      }
+    }
+  }, [activeJenjangs, selectedSekolahId, sekolahData]);
+
+  useEffect(() => {
+    if (selectedKelurahan && !activeKelurahans.includes(selectedKelurahan)) {
+      Promise.resolve().then(() => {
+        setSelectedKelurahan(null);
+      });
+    }
+  }, [activeKelurahans, selectedKelurahan]);
 
   // Selection dependent queries
   const { data: sppgRoutesData = null } = useSppgRoutesQuery(selectedSppgId);
@@ -288,70 +520,85 @@ export default function Dashboard() {
             totalSppgs={totalSppgs}
             totalSchools={totalSchools}
             coveragePercent={coveragePercent}
+            isLoading={isDataLoading}
           />
 
           <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
           {/* Dynamic Tab Contents */}
           <div className="space-y-4 pr-1">
-            {activeTab === "map" && (
-              <MapTabPanel
-                showKelurahan={showKelurahan}
-                setShowKelurahan={setShowKelurahan}
-                showJalan={showJalan}
-                setShowJalan={setShowJalan}
-                showSppg={showSppg}
-                setShowSppg={setShowSppg}
-                showSchools={showSchools}
-                setShowSchools={setShowSchools}
-                showRekomendasi={showRekomendasi}
-                setShowRekomendasi={setShowRekomendasi}
-                kelurahanStats={kelurahanStats}
-                selectedKelurahan={selectedKelurahan}
-                onSelectKelurahan={handleSelectKelurahan}
-              />
-            )}
+            {isDataLoading ? (
+              <SidebarSkeleton activeTab={activeTab} />
+            ) : (
+              <>
+                {activeTab === "map" && (
+                  <MapTabPanel
+                    showKelurahan={showKelurahan}
+                    setShowKelurahan={setShowKelurahan}
+                    showJalan={showJalan}
+                    setShowJalan={setShowJalan}
+                    showSppg={showSppg}
+                    setShowSppg={setShowSppg}
+                    showSchools={showSchools}
+                    setShowSchools={setShowSchools}
+                    showRekomendasi={showRekomendasi}
+                    setShowRekomendasi={setShowRekomendasi}
+                    kelurahanStats={kelurahanStats}
+                    selectedKelurahan={selectedKelurahan}
+                    onSelectKelurahan={handleSelectKelurahan}
+                    activeKecamatans={activeKecamatans}
+                    setActiveKecamatans={setActiveKecamatans}
+                    activeKelurahans={activeKelurahans}
+                    setActiveKelurahans={setActiveKelurahans}
+                    activeJenjangs={activeJenjangs}
+                    setActiveJenjangs={setActiveJenjangs}
+                    allKecamatans={allKecamatans}
+                    allKelurahans={allKelurahans}
+                  />
+                )}
 
-            {activeTab === "sppg" && (
-              <SppgTabPanel
-                sppgForm={sppgForm}
-                setSppgForm={setSppgForm}
-                formLoading={formLoading}
-                handleAddSppg={handleAddSppg}
-                sppgData={sppgData}
-                selectedSppgId={selectedSppgId}
-                onSelectSppg={handleSelectSppg}
-                onDelete={handleDeleteTrigger}
-              />
-            )}
+                {activeTab === "sppg" && (
+                  <SppgTabPanel
+                    sppgForm={sppgForm}
+                    setSppgForm={setSppgForm}
+                    formLoading={formLoading}
+                    handleAddSppg={handleAddSppg}
+                    sppgData={sppgData}
+                    selectedSppgId={selectedSppgId}
+                    onSelectSppg={handleSelectSppg}
+                    onDelete={handleDeleteTrigger}
+                  />
+                )}
 
-            {activeTab === "sekolah" && (
-              <SekolahTabPanel
-                sekolahForm={sekolahForm}
-                setSekolahForm={setSekolahForm}
-                formLoading={formLoading}
-                handleAddSekolah={handleAddSekolah}
-                sekolahData={sekolahData}
-                selectedSekolahId={selectedSekolahId}
-                onSelectSekolah={handleSelectSekolah}
-                onDelete={handleDeleteTrigger}
-                totalSchools={totalSchools}
-              />
-            )}
+                {activeTab === "sekolah" && (
+                  <SekolahTabPanel
+                    sekolahForm={sekolahForm}
+                    setSekolahForm={setSekolahForm}
+                    formLoading={formLoading}
+                    handleAddSekolah={handleAddSekolah}
+                    sekolahData={sekolahData}
+                    selectedSekolahId={selectedSekolahId}
+                    onSelectSekolah={handleSelectSekolah}
+                    onDelete={handleDeleteTrigger}
+                    totalSchools={totalSchools}
+                  />
+                )}
 
-            {activeTab === "coverage" && (
-              <CoverageTabPanel coverageStats={coverageStats} />
-            )}
+                {activeTab === "coverage" && (
+                  <CoverageTabPanel coverageStats={coverageStats} />
+                )}
 
-            {activeTab === "rekomendasi" && (
-              <RekomendasiTabPanel
-                handleRecalculate={handleRecalculate}
-                formLoading={formLoading}
-                rekomendasi={rekomendasi}
-                rekomendasiValidasi={rekomendasiValidasi}
-                selectedRekomendasiId={selectedRekomendasiId}
-                onSelectRekomendasi={handleSelectRekomendasi}
-              />
+                {activeTab === "rekomendasi" && (
+                  <RekomendasiTabPanel
+                    handleRecalculate={handleRecalculate}
+                    formLoading={formLoading}
+                    rekomendasi={rekomendasi}
+                    rekomendasiValidasi={rekomendasiValidasi}
+                    selectedRekomendasiId={selectedRekomendasiId}
+                    onSelectRekomendasi={handleSelectRekomendasi}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
@@ -368,8 +615,8 @@ export default function Dashboard() {
         <div className="flex-1 bg-white border border-[#1C322D]/15 rounded-2xl relative overflow-hidden flex shadow-lg">
           <MapComponent
             sppgGeojson={showSppg ? sppgData : null}
-            sekolahGeojson={showSchools ? sekolahData : null}
-            kelurahanGeojson={showKelurahan ? kelurahanBoundaries : null}
+            sekolahGeojson={showSchools ? filteredSchools : null}
+            kelurahanGeojson={showKelurahan ? filteredKelurahan : null}
             rekomendasiGeojson={showRekomendasi ? rekomendasi : null}
             showJalan={showJalan}
             selectedKelurahan={selectedKelurahan}

@@ -2,9 +2,15 @@ interface SidebarHeaderProps {
   totalSppgs: number;
   totalSchools: number;
   coveragePercent: number;
+  isLoading?: boolean;
 }
 
-export default function SidebarHeader({ totalSppgs, totalSchools, coveragePercent }: SidebarHeaderProps) {
+export default function SidebarHeader({
+  totalSppgs,
+  totalSchools,
+  coveragePercent,
+  isLoading = false,
+}: SidebarHeaderProps) {
   return (
     <div className="mb-8">
       <div className="mb-8">
@@ -27,7 +33,11 @@ export default function SidebarHeader({ totalSppgs, totalSchools, coveragePercen
         ].map(({ label, value, color }) => (
           <div key={label} className="p-3 bg-[#F8F3EE] rounded-2xl border border-[#1C322D]/15 shadow-xs hover:shadow-sm transition-all">
             <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono">{label}</span>
-            <p className={`text-lg font-bold mt-0.5 font-sans ${color}`}>{value}</p>
+            {isLoading ? (
+              <div className="h-5 bg-slate-200/60 rounded animate-pulse w-3/4 mt-1.5" />
+            ) : (
+              <p className={`text-lg font-bold mt-0.5 font-sans ${color}`}>{value}</p>
+            )}
           </div>
         ))}
       </div>

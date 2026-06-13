@@ -524,9 +524,6 @@ export default function MapOverlayPanel({
     const validasiRows = rekomendasiValidasi.filter(
       (v) => String(v.kluster_id) === selectedRekomendasiId
     );
-    const terjangkau = validasiRows.filter(
-      (v) => v.status_validasi === "Terjangkau"
-    ).length;
 
     return (
       <div
@@ -596,14 +593,6 @@ export default function MapOverlayPanel({
                   {rekFeature.properties.jumlah_sekolah}
                 </p>
               </div>
-              <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col justify-between col-span-3">
-                <span className="text-[8px] text-emerald-700 font-bold uppercase font-mono leading-none">
-                  Terjangkau (&lt;= 6km)
-                </span>
-                <p className="text-xs font-black text-emerald-800 mt-1 font-mono">
-                  {terjangkau}
-                </p>
-              </div>
             </div>
 
             {validasiRows.length > 0 && (
@@ -631,15 +620,13 @@ export default function MapOverlayPanel({
                         <p className="font-bold font-mono text-[10px] text-[#1C322D]">
                           {Math.round(v.jarak_meter)} m
                         </p>
-                        <span
-                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 ${
-                            v.status_validasi === "Terjangkau"
-                              ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                              : "bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
-                          }`}
-                        >
-                          {v.status_validasi}
-                        </span>
+                        {v.status_validasi !== "Terjangkau" && (
+                          <span
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
+                          >
+                            {v.status_validasi}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

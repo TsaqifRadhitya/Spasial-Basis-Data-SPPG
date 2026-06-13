@@ -91,15 +91,13 @@ export default function RekomendasiKlusterRow({
                 </div>
                 <div className="text-right shrink-0 ml-2">
                   <p className="font-bold font-mono text-[10px] text-[#1C322D]">{Math.round(v.jarak_meter)} m</p>
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 ${
-                      v.status_validasi === "Terjangkau"
-                        ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                        : "bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
-                    }`}
-                  >
-                    {v.status_validasi}
-                  </span>
+                  {v.status_validasi !== "Terjangkau" && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
+                    >
+                      {v.status_validasi}
+                    </span>
+                  )}
                 </div>
               </div>
             ))

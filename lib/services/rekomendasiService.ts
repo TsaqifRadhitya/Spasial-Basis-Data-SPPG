@@ -35,7 +35,9 @@ export class RekomendasiService {
         id: item.id,
         kluster_id: item.kluster_id,
         jumlah_sekolah: typeof item.jumlah_sekolah === 'string' ? parseInt(item.jumlah_sekolah, 10) : item.jumlah_sekolah,
-        tipe: 'rekomendasi',
+        tipe: 'rekomendasi' as const,
+        longitude: item.longitude,
+        latitude: item.latitude,
       },
     }));
 

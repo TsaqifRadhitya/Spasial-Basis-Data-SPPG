@@ -78,6 +78,7 @@ export interface KelurahanStat {
 export interface KelurahanFeatureProperties {
   nama: string;
   tipe: "kelurahan" | "kecamatan";
+  kecamatan?: string;
   total_sekolah: number;
   terlayani_count: number;
   blank_spot_count: number;
