@@ -5,6 +5,7 @@ import { up as migration002 } from './migrations/002_kecamatan';
 import { up as migration003 } from './migrations/003_kelurahan';
 import { up as migration005 } from './migrations/005_sppg';
 import { up as migration006 } from './migrations/006_sekolah';
+import { up as migration007 } from './migrations/007_timestamps';
 
 const migrations = [
   migration001,
@@ -12,6 +13,7 @@ const migrations = [
   migration003,
   migration005,
   migration006,
+  migration007,
 ];
 
 export async function migrate() {
