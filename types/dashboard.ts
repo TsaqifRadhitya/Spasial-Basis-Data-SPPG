@@ -145,3 +145,22 @@ export interface Toast {
 
 
 export type ActiveTab = "map" | "sppg" | "sekolah" | "coverage" | "rekomendasi";
+
+
+export interface SimulatedSchool {
+  id: string;
+  nama: string;
+  jenjang: string;
+  longitude: number;
+  latitude: number;
+  jarak_meter?: number;
+  jarak_ke_baru_meter?: number;
+  jarak_ke_lama_meter?: number;
+  nama_sppg_lama?: string;
+}
+
+export interface SppgSimulationResult {
+  blankSpotsCovered: SimulatedSchool[];
+  schoolsReassigned: SimulatedSchool[];
+}
+

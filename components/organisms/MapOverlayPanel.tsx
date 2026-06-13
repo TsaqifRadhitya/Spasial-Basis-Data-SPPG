@@ -269,27 +269,6 @@ export default function MapOverlayPanel({
             </p>
           </div>
 
-          {/* Legend Radius Jangkauan */}
-          <div className="p-3 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10 space-y-2">
-            <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono block">
-              Radius Jangkauan SPPG
-            </span>
-            <div className="flex flex-col gap-1.5 text-[10px] font-sans">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/20 border border-[#10B981]" />
-                <span className="font-semibold text-slate-700">
-                  Most Recommended (Radius 3 km)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#EBB552]/10 border border-[#EBB552] border-dashed" />
-                <span className="font-semibold text-slate-700">
-                  Estimation Coverage (Radius 6 km)
-                </span>
-              </div>
-            </div>
-          </div>
-
           <div className="p-2 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10">
             <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono">
               Sekolah Dilayani
@@ -680,20 +659,17 @@ export default function MapOverlayPanel({
                         </p>
                       </div>
                       <div className="text-right shrink-0 ml-2">
-                        <p className="font-bold font-mono text-[10px] text-[#1C322D]">
-                          {Math.round(v.jarak_meter)} m
-                        </p>
                         {v.status_validasi === "Sangat Direkomendasikan" ? (
-                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-emerald-50 border-emerald-300 text-emerald-800 text-center">
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block bg-emerald-50 border-emerald-300 text-emerald-800 text-center">
                             Recommended
                           </span>
                         ) : v.status_validasi === "Terjangkau" ? (
-                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-amber-50 border-amber-300 text-amber-800 text-center">
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block bg-amber-50 border-amber-300 text-amber-800 text-center">
                             Terjangkau
                           </span>
                         ) : (
-                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-[#F1CDBE]/50 border-[#1C322D]/20 text-[#1C322D] text-center">
-                            Di luar jangkauan
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block bg-[#F1CDBE]/50 border-[#1C322D]/20 text-[#1C322D] text-center">
+                            Di luar
                           </span>
                         )}
                       </div>

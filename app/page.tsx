@@ -486,7 +486,7 @@ export default function Dashboard() {
           nama_kelurahan: data.kelurahan || "",
         }));
         showToast(
-          `Lokasi terpilih untuk SPPG baru! Kelurahan: ${data.kelurahan || "Tidak diketahui"}`,
+          `Lokasi terpilih! Kelurahan: ${data.kelurahan || "Tidak diketahui"}`,
           "success",
         );
       }

@@ -85,4 +85,69 @@ export class SppgRepository {
     `, [id]);
     return res.rows;
   }
+
+  static async simulateNewSppg(lat: number, lng: number) {
+    // Blank spot schools that would be newly covered (within 6km of candidate)
+    const blankSpotRes = await query(`
+      SELECT 
+        s.id,
+        s.nama_sekolah AS nama,
+        s.jenjang,
+        ST_X(s.geom) AS longitude,
+        ST_Y(s.geom) AS latitude,
+        ROUND(ST_Distance(
+          s.geom::geography,
+          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+        )) AS jarak_meter
+      FROM sekolah s
+      WHERE s.id_sppg IS NULL
+        AND ST_DWithin(
+          s.geom::geography,
+          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
+          6000
+        )
+      ORDER BY jarak_meter ASC
+    `, [lat, lng]);
+
+    // Schools currently served by another SPPG that are closer to the new candidate
+    const reassignedRes = await query(`
+      SELECT 
+        s.id,
+        s.nama_sekolah AS nama,
+        s.jenjang,
+        ST_X(s.geom) AS longitude,
+        ST_Y(s.geom) AS latitude,
+        ROUND(ST_Distance(
+          s.geom::geography,
+          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+        )) AS jarak_ke_baru_meter,
+        ROUND(ST_Distance(
+          s.geom::geography,
+          sp.geom::geography
+        )) AS jarak_ke_lama_meter,
+        sp.nama_sppg AS nama_sppg_lama
+      FROM sekolah s
+      JOIN sppg sp ON sp.id = s.id_sppg
+      WHERE s.id_sppg IS NOT NULL
+        AND ST_DWithin(
+          s.geom::geography,
+          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
+          6000
+        )
+        AND ST_Distance(
+          s.geom::geography,
+          ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+        ) < ST_Distance(
+          s.geom::geography,
+          sp.geom::geography
+        )
+      ORDER BY jarak_ke_baru_meter ASC
+    `, [lat, lng]);
+
+    return {
+      blankSpotsCovered: blankSpotRes.rows,
+      schoolsReassigned: reassignedRes.rows,
+    };
+  }
 }
+
