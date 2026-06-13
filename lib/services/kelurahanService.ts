@@ -1,12 +1,13 @@
 import { KelurahanRepository } from '../repositories/kelurahanRepository';
+import { withRetry } from '../utils/withRetry';
 
 export class KelurahanService {
   static async getKelurahanSummary() {
-    return await KelurahanRepository.getAllWithCoverageSummary();
+    return withRetry(() => KelurahanRepository.getAllWithCoverageSummary());
   }
 
   static async getAsGeoJSON() {
-    const list = await KelurahanRepository.getAdminBoundaries();
+    const list = await withRetry(() => KelurahanRepository.getAdminBoundaries());
 
     const features = list.map((item: any) => ({
       type: 'Feature',

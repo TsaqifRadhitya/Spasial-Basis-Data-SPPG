@@ -1,22 +1,21 @@
 import { RekomendasiRepository } from '../repositories/rekomendasiRepository';
-import { CoverageRepository } from '../repositories/coverageRepository';
-import { SppgRepository } from '../repositories/sppgRepository';
+import { withRetry } from '../utils/withRetry';
 
 export class RekomendasiService {
   static async getRekomendasi() {
-    return await RekomendasiRepository.getAll();
+    return withRetry(() => RekomendasiRepository.getAll());
   }
 
   static async getValidasi() {
-    return await RekomendasiRepository.getValidasi();
+    return withRetry(() => RekomendasiRepository.getValidasi());
   }
 
   static async generateRekomendasi() {
-    return await this.getAsGeoJSON();
+    return this.getAsGeoJSON();
   }
 
   static async getAsGeoJSON() {
-    const list = await RekomendasiRepository.getAll();
+    const list = await withRetry(() => RekomendasiRepository.getAll());
 
     const features = list.map((item: any) => ({
       type: 'Feature',

@@ -1,23 +1,26 @@
 import { SppgRepository, SPPG } from '../repositories/sppgRepository';
 import { CoverageRepository } from '../repositories/coverageRepository';
+import { withRetry } from '../utils/withRetry';
 
 export class SppgService {
   static async getAllSppg() {
-    return await SppgRepository.getAll();
+    return withRetry(() => SppgRepository.getAll());
   }
 
   static async getSppgById(id: string) {
-    return await SppgRepository.getById(id);
+    return withRetry(() => SppgRepository.getById(id));
   }
 
   static async createSppg(sppg: SPPG) {
-    return await SppgRepository.create(sppg);
+    return withRetry(() => SppgRepository.create(sppg));
   }
 
   static async getAsGeoJSON() {
-    const list = await SppgRepository.getAll();
-    const coverageAreaList = await CoverageRepository.getLuasCoverage();
-    
+    const [list, coverageAreaList] = await Promise.all([
+      withRetry(() => SppgRepository.getAll()),
+      withRetry(() => CoverageRepository.getLuasCoverage()),
+    ]);
+
     const coverageMap = new Map(coverageAreaList.map(item => [item.sppg_id, parseFloat(item.luas_coverage_km2)]));
 
     const features = list.map((item: any) => ({
@@ -44,8 +47,8 @@ export class SppgService {
   }
 
   static async getSppgRoutesGeoJSON(id: string) {
-    const routes = await SppgRepository.getSppgRoutes(id);
-    
+    const routes = await withRetry(() => SppgRepository.getSppgRoutes(id));
+
     const features = routes.map((item: any) => ({
       type: 'Feature',
       geometry: item.geometry,
@@ -62,6 +65,6 @@ export class SppgService {
   }
 
   static async deleteSppg(id: string) {
-    return await SppgRepository.delete(id);
+    return withRetry(() => SppgRepository.delete(id));
   }
 }

@@ -1,16 +1,17 @@
 import { CoverageRepository } from '../repositories/coverageRepository';
+import { withRetry } from '../utils/withRetry';
 
 export class CoverageService {
   static async getPanjangJalan() {
-    return await CoverageRepository.getPanjangJalanCoverage();
+    return withRetry(() => CoverageRepository.getPanjangJalanCoverage());
   }
 
   static async getDrivingDistances() {
-    return await CoverageRepository.calculateDrivingDistances();
+    return withRetry(() => CoverageRepository.calculateDrivingDistances());
   }
 
   static async getServiceAreaGeoJSON() {
-    const list = await CoverageRepository.getServiceAreaPolygons();
+    const list = await withRetry(() => CoverageRepository.getServiceAreaPolygons());
 
     const features = list.map((item: any) => ({
       type: 'Feature',
@@ -28,9 +29,5 @@ export class CoverageService {
       type: 'FeatureCollection',
       features,
     };
-  }
-
-  static async regenerateServiceAreas(sppgs: { id: string; node_id: number }[]) {
-    // No-op (service areas are now dynamically computed on demand)
   }
 }

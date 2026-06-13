@@ -58,14 +58,6 @@ export class CoverageRepository {
     return res.rows;
   }
 
-  static async clearServiceAreas() {
-    // No-op
-  }
-
-  static async generateServiceAreaPolygon(sppgId: string, node_id: number) {
-    // No-op
-  }
-
   static async getLuasCoverage() {
     // Return area of the 6km buffer in square kilometers
     const res = await query(`

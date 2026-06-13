@@ -1,20 +1,21 @@
 import { SekolahRepository, Sekolah } from '../repositories/sekolahRepository';
+import { withRetry } from '../utils/withRetry';
 
 export class SekolahService {
   static async getAll(kelurahan?: string) {
-    return await SekolahRepository.getAll(kelurahan);
+    return withRetry(() => SekolahRepository.getAll(kelurahan));
   }
 
   static async getBlankSpots() {
-    return await SekolahRepository.getBlankSpots();
+    return withRetry(() => SekolahRepository.getBlankSpots());
   }
 
   static async create(sekolah: Sekolah) {
-    return await SekolahRepository.create(sekolah);
+    return withRetry(() => SekolahRepository.create(sekolah));
   }
 
   static async getAsGeoJSON(kelurahan?: string) {
-    const list = await SekolahRepository.getAll(kelurahan);
+    const list = await withRetry(() => SekolahRepository.getAll(kelurahan));
 
     const features = list.map((item: any) => {
       const isBlankSpot = !item.id_sppg;
@@ -46,7 +47,7 @@ export class SekolahService {
   }
 
   static async getSchoolRouteGeoJSON(id: string) {
-    const routes = await SekolahRepository.getSchoolRoute(id);
+    const routes = await withRetry(() => SekolahRepository.getSchoolRoute(id));
     const features = routes.map((item: any) => ({
       type: 'Feature',
       geometry: item.geometry,
@@ -62,6 +63,6 @@ export class SekolahService {
   }
 
   static async delete(id: string) {
-    return await SekolahRepository.delete(id);
+    return withRetry(() => SekolahRepository.delete(id));
   }
 }
