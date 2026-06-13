@@ -17,6 +17,7 @@ export type SppgCollection = GeoJSONCollection<SppgProperties>;
 export interface SppgForm {
   nama_sppg: string;
   alamat: string;
+  nama_kelurahan: string;
   longitude: string;
   latitude: string;
 }

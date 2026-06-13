@@ -20,9 +20,7 @@ import {
   useKelurahanStatsQuery,
   useKelurahanGeojsonQuery,
 } from "@/hooks/useKelurahan";
-import {
-  useCoverageStatsQuery,
-} from "@/hooks/useCoverage";
+import { useCoverageStatsQuery } from "@/hooks/useCoverage";
 import {
   useRekomendasiQuery,
   useRekomendasiValidasiQuery,
@@ -41,7 +39,15 @@ import MapOverlayPanel from "@/components/organisms/MapOverlayPanel";
 import DeleteConfirmModal from "@/components/organisms/DeleteConfirmModal";
 import ToastContainer from "@/components/organisms/ToastContainer";
 
-import type { ActiveTab, DeleteModalState, Toast, ToastType, SekolahFeature, GeoJSONFeature, KelurahanFeatureProperties } from "@/types/dashboard";
+import type {
+  ActiveTab,
+  DeleteModalState,
+  Toast,
+  ToastType,
+  SekolahFeature,
+  GeoJSONFeature,
+  KelurahanFeatureProperties,
+} from "@/types/dashboard";
 import type { SppgForm } from "@/modules/sppg/types";
 import type { SekolahForm } from "@/modules/sekolah/types";
 
@@ -95,7 +101,10 @@ const SidebarSkeleton = ({ activeTab }: { activeTab: string }) => {
             <div className="h-4 bg-slate-200 rounded w-1/2"></div>
             <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse"></div>
+                <div
+                  key={i}
+                  className="h-12 bg-slate-100 rounded-xl animate-pulse"
+                ></div>
               ))}
             </div>
           </div>
@@ -214,19 +223,33 @@ export default function Dashboard() {
   const [showRekomendasi, setShowRekomendasi] = useState(true);
 
   // Selection states
-  const [selectedKelurahan, setSelectedKelurahan] = useState<string | null>(null);
+  const [selectedKelurahan, setSelectedKelurahan] = useState<string | null>(
+    null,
+  );
   const [selectedSppgId, setSelectedSppgId] = useState<string | null>(null);
-  const [selectedSekolahId, setSelectedSekolahId] = useState<string | null>(null);
-  const [selectedRekomendasiId, setSelectedRekomendasiId] = useState<string | null>(null);
+  const [selectedSekolahId, setSelectedSekolahId] = useState<string | null>(
+    null,
+  );
+  const [selectedRekomendasiId, setSelectedRekomendasiId] = useState<
+    string | null
+  >(null);
 
   // Queries
   const { data: sppgData = null, isLoading: isLoadingSppg } = useSppgQuery();
-  const { data: sekolahData = null, isLoading: isLoadingSekolah } = useSekolahQuery();
-  const { data: kelurahanBoundaries = null, isLoading: isLoadingBoundaries } = useKelurahanGeojsonQuery();
-  const { data: rekomendasi = null, isLoading: isLoadingRekomendasi } = useRekomendasiQuery();
-  const { data: kelurahanStats = [], isLoading: isLoadingKelurahanStats } = useKelurahanStatsQuery();
-  const { data: coverageStats = { panjangJalan: [], drivingDistances: [] }, isLoading: isLoadingCoverage } = useCoverageStatsQuery();
-  const { data: rekomendasiValidasi = [], isLoading: isLoadingValidasi } = useRekomendasiValidasiQuery();
+  const { data: sekolahData = null, isLoading: isLoadingSekolah } =
+    useSekolahQuery();
+  const { data: kelurahanBoundaries = null, isLoading: isLoadingBoundaries } =
+    useKelurahanGeojsonQuery();
+  const { data: rekomendasi = null, isLoading: isLoadingRekomendasi } =
+    useRekomendasiQuery();
+  const { data: kelurahanStats = [], isLoading: isLoadingKelurahanStats } =
+    useKelurahanStatsQuery();
+  const {
+    data: coverageStats = { panjangJalan: [], drivingDistances: [] },
+    isLoading: isLoadingCoverage,
+  } = useCoverageStatsQuery();
+  const { data: rekomendasiValidasi = [], isLoading: isLoadingValidasi } =
+    useRekomendasiValidasiQuery();
 
   const isDataLoading =
     isLoadingSppg ||
@@ -240,7 +263,12 @@ export default function Dashboard() {
   // Sub-filters states for map customize layout
   const [activeKecamatans, setActiveKecamatans] = useState<string[]>([]);
   const [activeKelurahans, setActiveKelurahans] = useState<string[]>([]);
-  const [activeJenjangs, setActiveJenjangs] = useState<string[]>(["SD", "SMP", "SMA", "SMK"]);
+  const [activeJenjangs, setActiveJenjangs] = useState<string[]>([
+    "SD",
+    "SMP",
+    "SMA",
+    "SMK",
+  ]);
 
   // Extract all unique Kecamatan and Kelurahan names
   const allKecamatans = useMemo(() => {
@@ -248,9 +276,15 @@ export default function Dashboard() {
     return Array.from(
       new Set<string>(
         kelurahanBoundaries.features
-          .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kecamatan")
-          .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
-      )
+          .filter(
+            (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+              f.properties.tipe === "kecamatan",
+          )
+          .map(
+            (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+              f.properties.nama,
+          ),
+      ),
     ).sort();
   }, [kelurahanBoundaries]);
 
@@ -259,9 +293,15 @@ export default function Dashboard() {
     return Array.from(
       new Set<string>(
         kelurahanBoundaries.features
-          .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kelurahan")
-          .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
-      )
+          .filter(
+            (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+              f.properties.tipe === "kelurahan",
+          )
+          .map(
+            (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+              f.properties.nama,
+          ),
+      ),
     ).sort();
   }, [kelurahanBoundaries]);
 
@@ -271,20 +311,32 @@ export default function Dashboard() {
       const kecs: string[] = Array.from(
         new Set<string>(
           kelurahanBoundaries.features
-            .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kecamatan")
-            .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
-        )
+            .filter(
+              (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+                f.properties.tipe === "kecamatan",
+            )
+            .map(
+              (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+                f.properties.nama,
+            ),
+        ),
       ).sort();
       const kels: string[] = Array.from(
         new Set<string>(
           kelurahanBoundaries.features
-            .filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.tipe === "kelurahan")
-            .map((f: GeoJSONFeature<KelurahanFeatureProperties>) => f.properties.nama)
-        )
+            .filter(
+              (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+                f.properties.tipe === "kelurahan",
+            )
+            .map(
+              (f: GeoJSONFeature<KelurahanFeatureProperties>) =>
+                f.properties.nama,
+            ),
+        ),
       ).sort();
       Promise.resolve().then(() => {
-        setActiveKecamatans(prev => prev.length === 0 ? kecs : prev);
-        setActiveKelurahans(prev => prev.length === 0 ? kels : prev);
+        setActiveKecamatans((prev) => (prev.length === 0 ? kecs : prev));
+        setActiveKelurahans((prev) => (prev.length === 0 ? kels : prev));
       });
     }
   }, [kelurahanBoundaries]);
@@ -294,13 +346,15 @@ export default function Dashboard() {
     if (!kelurahanBoundaries) return null;
     return {
       ...kelurahanBoundaries,
-      features: kelurahanBoundaries.features.filter((f: GeoJSONFeature<KelurahanFeatureProperties>) => {
-        if (f.properties.tipe === "kecamatan") {
-          return activeKecamatans.includes(f.properties.nama);
-        } else {
-          return activeKelurahans.includes(f.properties.nama);
-        }
-      })
+      features: kelurahanBoundaries.features.filter(
+        (f: GeoJSONFeature<KelurahanFeatureProperties>) => {
+          if (f.properties.tipe === "kecamatan") {
+            return activeKecamatans.includes(f.properties.nama);
+          } else {
+            return activeKelurahans.includes(f.properties.nama);
+          }
+        },
+      ),
     };
   }, [kelurahanBoundaries, activeKecamatans, activeKelurahans]);
 
@@ -308,17 +362,22 @@ export default function Dashboard() {
     if (!sekolahData) return null;
     return {
       ...sekolahData,
-      features: sekolahData.features.filter((f: SekolahFeature) => 
-        activeJenjangs.includes(f.properties.jenjang)
-      )
+      features: sekolahData.features.filter((f: SekolahFeature) =>
+        activeJenjangs.includes(f.properties.jenjang),
+      ),
     };
   }, [sekolahData, activeJenjangs]);
 
   // Auto-clear selection state if selected item is filtered out
   useEffect(() => {
     if (selectedSekolahId && sekolahData) {
-      const selectedSchool = sekolahData.features.find((f: SekolahFeature) => f.properties.id === selectedSekolahId);
-      if (selectedSchool && !activeJenjangs.includes(selectedSchool.properties.jenjang)) {
+      const selectedSchool = sekolahData.features.find(
+        (f: SekolahFeature) => f.properties.id === selectedSekolahId,
+      );
+      if (
+        selectedSchool &&
+        !activeJenjangs.includes(selectedSchool.properties.jenjang)
+      ) {
         Promise.resolve().then(() => {
           setSelectedSekolahId(null);
         });
@@ -336,12 +395,14 @@ export default function Dashboard() {
 
   // Selection dependent queries
   const { data: sppgRoutesData = null } = useSppgRoutesQuery(selectedSppgId);
-  const { data: sekolahRouteData = null } = useSchoolRouteQuery(selectedSekolahId);
+  const { data: sekolahRouteData = null } =
+    useSchoolRouteQuery(selectedSekolahId);
 
   // Form states
   const [sppgForm, setSppgForm] = useState<SppgForm>({
     nama_sppg: "",
     alamat: "",
+    nama_kelurahan: "",
     longitude: "",
     latitude: "",
   });
@@ -355,13 +416,40 @@ export default function Dashboard() {
     latitude: "",
   });
 
-  // Delete modal state
-  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
-    isOpen: false,
-    type: "sppg",
-    id: "",
-    name: "",
-  });
+  // Location picker states & logic
+  const [isPickerActive, setIsPickerActive] = useState(false);
+
+  useEffect(() => {
+    setIsPickerActive(false);
+  }, [activeTab]);
+
+  const pickedLocation = useMemo(() => {
+    if (
+      activeTab === "sekolah" &&
+      sekolahForm.latitude &&
+      sekolahForm.longitude
+    ) {
+      const lat = parseFloat(sekolahForm.latitude);
+      const lng = parseFloat(sekolahForm.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, type: "sekolah" as const };
+      }
+    }
+    if (activeTab === "sppg" && sppgForm.latitude && sppgForm.longitude) {
+      const lat = parseFloat(sppgForm.latitude);
+      const lng = parseFloat(sppgForm.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng, type: "sppg" as const };
+      }
+    }
+    return null;
+  }, [
+    activeTab,
+    sekolahForm.latitude,
+    sekolahForm.longitude,
+    sppgForm.latitude,
+    sppgForm.longitude,
+  ]);
 
   // Toasts state
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -373,6 +461,65 @@ export default function Dashboard() {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
   };
+
+  const handleLocationPicked = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `/api/spatial/check-location?lat=${lat}&lng=${lng}`,
+      );
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        showToast(data.error || "Gagal memeriksa lokasi", "error");
+        return;
+      }
+
+      if (!data.insideSumbersari) {
+        showToast(
+          "Gagal: Lokasi harus berada di dalam wilayah Kecamatan Sumbersari!",
+          "error",
+        );
+        return;
+      }
+
+      if (activeTab === "sekolah") {
+        setSekolahForm((prev) => ({
+          ...prev,
+          latitude: lat.toString(),
+          longitude: lng.toString(),
+          nama_kelurahan: data.kelurahan || "",
+        }));
+        showToast(
+          `Lokasi terpilih! Kelurahan: ${data.kelurahan || "Tidak diketahui"}`,
+          "success",
+        );
+      } else if (activeTab === "sppg") {
+        setSppgForm((prev) => ({
+          ...prev,
+          latitude: lat.toString(),
+          longitude: lng.toString(),
+          nama_kelurahan: data.kelurahan || "",
+        }));
+        showToast(
+          `Lokasi terpilih untuk SPPG baru! Kelurahan: ${data.kelurahan || "Tidak diketahui"}`,
+          "success",
+        );
+      }
+
+      setIsPickerActive(false);
+    } catch (err) {
+      console.error(err);
+      showToast("Terjadi kesalahan koneksi saat memeriksa lokasi", "error");
+    }
+  };
+
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
+    isOpen: false,
+    type: "sppg",
+    id: "",
+    name: "",
+  });
 
   // Mutations
   const addSppgMutation = useAddSppgMutation();
@@ -390,7 +537,8 @@ export default function Dashboard() {
   const totalSppgs = sppgData?.features?.length || 0;
   const totalSchools = sekolahData?.features?.length || 0;
   const blankSpotsCount =
-    sekolahData?.features?.filter((f: SekolahFeature) => !f.properties.id_sppg).length || 0;
+    sekolahData?.features?.filter((f: SekolahFeature) => !f.properties.id_sppg)
+      .length || 0;
   const coveragePercent =
     totalSchools > 0
       ? Math.round(((totalSchools - blankSpotsCount) / totalSchools) * 100)
@@ -402,7 +550,7 @@ export default function Dashboard() {
       onSuccess: () => {
         showToast(
           "Berhasil mengkalkulasi ulang kluster blank spot dan rekomendasi SPPG!",
-          "success"
+          "success",
         );
       },
       onError: (err) => {
@@ -416,7 +564,13 @@ export default function Dashboard() {
     addSppgMutation.mutate(sppgForm, {
       onSuccess: () => {
         showToast("Berhasil menambah SPPG!", "success");
-        setSppgForm({ nama_sppg: "", alamat: "", longitude: "", latitude: "" });
+        setSppgForm({
+          nama_sppg: "",
+          alamat: "",
+          nama_kelurahan: "",
+          longitude: "",
+          latitude: "",
+        });
       },
       onError: (err) => {
         showToast(`Gagal: ${err.message}`, "error");
@@ -445,27 +599,28 @@ export default function Dashboard() {
   };
 
   const handleDeleteSppg = async (id: string) => {
-    deleteSppgMutation.mutate(id, {
-      onSuccess: () => {
-        showToast("Berhasil menghapus SPPG dan merelokasi sekolah terdampak!", "success");
-        if (selectedSppgId === id) setSelectedSppgId(null);
-      },
-      onError: (err) => {
-        showToast(`Gagal menghapus SPPG: ${err.message}`, "error");
-      },
-    });
+    try {
+      await deleteSppgMutation.mutateAsync(id);
+      showToast(
+        "Berhasil menghapus SPPG dan merelokasi sekolah terdampak!",
+        "success",
+      );
+      if (selectedSppgId === id) setSelectedSppgId(null);
+    } catch (err: any) {
+      showToast(`Gagal menghapus SPPG: ${err.message}`, "error");
+      throw err;
+    }
   };
 
   const handleDeleteSekolah = async (id: string) => {
-    deleteSekolahMutation.mutate(id, {
-      onSuccess: () => {
-        showToast("Berhasil menghapus sekolah!", "success");
-        if (selectedSekolahId === id) setSelectedSekolahId(null);
-      },
-      onError: (err) => {
-        showToast(`Gagal menghapus sekolah: ${err.message}`, "error");
-      },
-    });
+    try {
+      await deleteSekolahMutation.mutateAsync(id);
+      showToast("Berhasil menghapus sekolah!", "success");
+      if (selectedSekolahId === id) setSelectedSekolahId(null);
+    } catch (err: any) {
+      showToast(`Gagal menghapus sekolah: ${err.message}`, "error");
+      throw err;
+    }
   };
 
   const handleSelectKelurahan = (nama: string | null) => {
@@ -567,6 +722,17 @@ export default function Dashboard() {
                     selectedSppgId={selectedSppgId}
                     onSelectSppg={handleSelectSppg}
                     onDelete={handleDeleteTrigger}
+                    isPickerActive={isPickerActive}
+                    setIsPickerActive={setIsPickerActive}
+                    onClear={() =>
+                      setSppgForm({
+                        nama_sppg: "",
+                        alamat: "",
+                        nama_kelurahan: "",
+                        longitude: "",
+                        latitude: "",
+                      })
+                    }
                   />
                 )}
 
@@ -581,6 +747,18 @@ export default function Dashboard() {
                     onSelectSekolah={handleSelectSekolah}
                     onDelete={handleDeleteTrigger}
                     totalSchools={totalSchools}
+                    isPickerActive={isPickerActive}
+                    setIsPickerActive={setIsPickerActive}
+                    onClear={() =>
+                      setSekolahForm({
+                        nama_sekolah: "",
+                        jenjang: "SD",
+                        alamat: "",
+                        nama_kelurahan: "",
+                        longitude: "",
+                        latitude: "",
+                      })
+                    }
                   />
                 )}
 
@@ -630,6 +808,9 @@ export default function Dashboard() {
             selectedRekomendasiId={selectedRekomendasiId}
             onSelectRekomendasi={handleSelectRekomendasi}
             rekomendasiValidasi={rekomendasiValidasi}
+            isPickerActive={isPickerActive}
+            onLocationPicked={handleLocationPicked}
+            pickedLocation={pickedLocation}
           />
 
           {/* Map Overlays for Selected SPPG/Sekolah/Kelurahan/Rekomendasi */}

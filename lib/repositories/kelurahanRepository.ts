@@ -56,4 +56,42 @@ export class KelurahanRepository {
     `);
     return res.rows;
   }
+
+  static async checkLocation(longitude: number, latitude: number) {
+    // 1. Find containing kecamatan
+    const kecRes = await query(`
+      SELECT id, nama_kecamatan
+      FROM kecamatan
+      WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+      LIMIT 1
+    `, [longitude, latitude]);
+
+    if (kecRes.rows.length === 0) {
+      return { insideSumbersari: false, kecamatan: null, kelurahan: null };
+    }
+
+    const kec = kecRes.rows[0];
+    const isSumbersari = kec.nama_kecamatan.toLowerCase() === 'sumbersari';
+
+    if (!isSumbersari) {
+      return { insideSumbersari: false, kecamatan: kec.nama_kecamatan, kelurahan: null };
+    }
+
+    // 2. Find containing kelurahan
+    const kelRes = await query(`
+      SELECT id, nama_kelurahan
+      FROM kelurahan
+      WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+      LIMIT 1
+    `, [longitude, latitude]);
+
+    const kel = kelRes.rows[0] || null;
+    return {
+      insideSumbersari: true,
+      kecamatan: kec.nama_kecamatan,
+      kelurahan: kel ? kel.nama_kelurahan : null,
+      kelurahan_id: kel ? kel.id : null
+    };
+  }
 }
+

@@ -48,21 +48,17 @@ export default function MapOverlayPanel({
 }: MapOverlayPanelProps) {
   const schoolProps =
     selectedSekolahId &&
-    sekolahData?.features?.find(
-      (f) => f.properties.id === selectedSekolahId
-    )?.properties;
+    sekolahData?.features?.find((f) => f.properties.id === selectedSekolahId)
+      ?.properties;
 
   const sppgProps =
     selectedSppgId &&
-    sppgData?.features?.find(
-      (f) => f.properties.id === selectedSppgId
-    )?.properties;
+    sppgData?.features?.find((f) => f.properties.id === selectedSppgId)
+      ?.properties;
 
   const kelProps =
     selectedKelurahan &&
-    kelurahanStats?.find(
-      (k) => k.nama_kelurahan === selectedKelurahan
-    );
+    kelurahanStats?.find((k) => k.nama_kelurahan === selectedKelurahan);
 
   if (schoolProps) {
     return (
@@ -118,7 +114,11 @@ export default function MapOverlayPanel({
                 stroke="currentColor"
                 strokeWidth="2.5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -151,10 +151,10 @@ export default function MapOverlayPanel({
               {schoolProps.id_sppg ? (
                 (() => {
                   const servingSppg = sppgData?.features?.find(
-                    (f) => f.properties.id === schoolProps.id_sppg
+                    (f) => f.properties.id === schoolProps.id_sppg,
                   )?.properties;
                   const distItem = coverageStats?.drivingDistances?.find(
-                    (d) => d.nama_sekolah === schoolProps.nama
+                    (d) => d.nama_sekolah === schoolProps.nama,
                   );
                   return (
                     <div className="p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-1">
@@ -183,7 +183,8 @@ export default function MapOverlayPanel({
                     <span>Blank Spot (Tidak Terlayani)</span>
                   </div>
                   <p className="text-[#1C322D]/85 leading-snug text-[10px]">
-                    Sekolah berada di luar radius mengemudi 6 km dari semua SPPG aktif.
+                    Sekolah berada di luar radius mengemudi 6 km dari semua SPPG
+                    aktif.
                   </p>
                 </div>
               )}
@@ -248,7 +249,11 @@ export default function MapOverlayPanel({
                 stroke="currentColor"
                 strokeWidth="2.5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -264,6 +269,27 @@ export default function MapOverlayPanel({
             </p>
           </div>
 
+          {/* Legend Radius Jangkauan */}
+          <div className="p-3 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10 space-y-2">
+            <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono block">
+              Radius Jangkauan SPPG
+            </span>
+            <div className="flex flex-col gap-1.5 text-[10px] font-sans">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/20 border border-[#10B981]" />
+                <span className="font-semibold text-slate-700">
+                  Most Recommended (Radius 3 km)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#EBB552]/10 border border-[#EBB552] border-dashed" />
+                <span className="font-semibold text-slate-700">
+                  Estimation Coverage (Radius 6 km)
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="p-2 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10">
             <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono">
               Sekolah Dilayani
@@ -272,11 +298,13 @@ export default function MapOverlayPanel({
               {(() => {
                 const served =
                   sekolahData?.features?.filter(
-                    (f) => f.properties.id_sppg === selectedSppgId
+                    (f) => f.properties.id_sppg === selectedSppgId,
                   ) || [];
                 return served.length;
               })()}{" "}
-              <span className="text-[10px] font-normal text-[#1C322D]">unit</span>
+              <span className="text-[10px] font-normal text-[#1C322D]">
+                unit
+              </span>
             </p>
           </div>
 
@@ -287,7 +315,7 @@ export default function MapOverlayPanel({
             {(() => {
               const served =
                 sekolahData?.features?.filter(
-                  (f) => f.properties.id_sppg === selectedSppgId
+                  (f) => f.properties.id_sppg === selectedSppgId,
                 ) || [];
               if (served.length === 0) {
                 return (
@@ -300,7 +328,7 @@ export default function MapOverlayPanel({
                 <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 mt-1">
                   {served.map((item) => {
                     const distVal = coverageStats?.drivingDistances?.find(
-                      (d) => d.nama_sekolah === item.properties.nama
+                      (d) => d.nama_sekolah === item.properties.nama,
                     );
                     return (
                       <div
@@ -343,11 +371,11 @@ export default function MapOverlayPanel({
         : 0;
     const schoolsInKel =
       sekolahData?.features?.filter(
-        (f) => f.properties.kelurahan === selectedKelurahan
+        (f) => f.properties.kelurahan === selectedKelurahan,
       ) || [];
     const sppgsInKel =
       sppgData?.features?.filter(
-        (f) => f.properties.kelurahan === selectedKelurahan
+        (f) => f.properties.kelurahan === selectedKelurahan,
       ) || [];
 
     return (
@@ -376,7 +404,11 @@ export default function MapOverlayPanel({
               stroke="currentColor"
               strokeWidth="2.5"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -502,7 +534,9 @@ export default function MapOverlayPanel({
                     </div>
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 ml-2 ${
-                        isBlank ? "bg-[#F1CDBE] text-[#1C322D]" : "bg-emerald-100 text-emerald-800"
+                        isBlank
+                          ? "bg-[#F1CDBE] text-[#1C322D]"
+                          : "bg-emerald-100 text-emerald-800"
                       }`}
                     >
                       {isBlank ? "Blank Spot" : "Terlayani"}
@@ -519,10 +553,10 @@ export default function MapOverlayPanel({
 
   if (selectedRekomendasiId) {
     const rekFeature = rekomendasi?.features?.find(
-      (f) => String(f.properties.kluster_id) === selectedRekomendasiId
+      (f) => String(f.properties.kluster_id) === selectedRekomendasiId,
     );
     const validasiRows = rekomendasiValidasi.filter(
-      (v) => String(v.kluster_id) === selectedRekomendasiId
+      (v) => String(v.kluster_id) === selectedRekomendasiId,
     );
 
     return (
@@ -567,7 +601,11 @@ export default function MapOverlayPanel({
               stroke="currentColor"
               strokeWidth="2.5"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -595,6 +633,27 @@ export default function MapOverlayPanel({
               </div>
             </div>
 
+            {/* Legend Radius Jangkauan */}
+            <div className="p-3 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10 space-y-2">
+              <span className="text-[9px] text-[#1C322D]/60 font-bold uppercase font-mono block">
+                Radius Jangkauan Rekomendasi
+              </span>
+              <div className="flex flex-col gap-1.5 text-[10px] font-sans">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]/20 border border-[#10B981]" />
+                  <span className="font-semibold text-slate-700">
+                    Most Recommended (Radius 3 km)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#EBB552]/10 border border-[#EBB552] border-dashed" />
+                  <span className="font-semibold text-slate-700">
+                    Estimation Coverage (Radius 6 km)
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {validasiRows.length > 0 && (
               <div>
                 <span className="text-[10px] text-[#1C322D]/60 font-bold uppercase font-mono block mb-1">
@@ -609,7 +668,11 @@ export default function MapOverlayPanel({
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            v.status_validasi === "Terjangkau" ? "bg-emerald-500" : "bg-[#E0533C]"
+                            v.status_validasi === "Sangat Direkomendasikan"
+                              ? "bg-emerald-500"
+                              : v.status_validasi === "Terjangkau"
+                                ? "bg-[#EBB552]"
+                                : "bg-[#E0533C]"
                           }`}
                         />
                         <p className="font-semibold text-slate-800 font-sans text-[11px] leading-tight">
@@ -620,11 +683,17 @@ export default function MapOverlayPanel({
                         <p className="font-bold font-mono text-[10px] text-[#1C322D]">
                           {Math.round(v.jarak_meter)} m
                         </p>
-                        {v.status_validasi !== "Terjangkau" && (
-                          <span
-                            className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
-                          >
-                            {v.status_validasi}
+                        {v.status_validasi === "Sangat Direkomendasikan" ? (
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-emerald-50 border-emerald-300 text-emerald-800 text-center">
+                            Recommended
+                          </span>
+                        ) : v.status_validasi === "Terjangkau" ? (
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-amber-50 border-amber-300 text-amber-800 text-center">
+                            Terjangkau
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-[#F1CDBE]/50 border-[#1C322D]/20 text-[#1C322D] text-center">
+                            Di luar jangkauan
                           </span>
                         )}
                       </div>

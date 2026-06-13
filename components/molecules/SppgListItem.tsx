@@ -24,7 +24,7 @@ export default function SppgListItem({ feature: f, isSelected, onSelect, onDelet
         <div className={`flex justify-between text-[10px] pt-1 font-mono ${isSelected ? "text-white/70" : "text-[#1C322D]/70"}`}>
           <span>Node: {f.properties.node_id ?? "–"}</span>
           <span className="text-[#EBB552] font-bold">
-            {isSelected ? "Terpilih - Rute Aktif" : "Klik untuk rute (<= 6km)"}
+            {isSelected ? "Terpilih - Rute Aktif" : "Klik untuk rute kurang dari atau sama dengan 6 km"}
           </span>
         </div>
       </button>

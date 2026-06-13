@@ -47,6 +47,7 @@ export class RekomendasiRepository {
         sbs.nama_sekolah,
         ROUND(ST_Distance(r.titik_rekomendasi_sppg::geography, sbs.geom::geography)::numeric, 2) AS jarak_meter,
         CASE 
+          WHEN ST_Distance(r.titik_rekomendasi_sppg::geography, sbs.geom::geography) <= 3000 THEN 'Sangat Direkomendasikan'
           WHEN ST_Distance(r.titik_rekomendasi_sppg::geography, sbs.geom::geography) <= 6000 THEN 'Terjangkau'
           ELSE 'Di luar jangkauan'
         END AS status_validasi

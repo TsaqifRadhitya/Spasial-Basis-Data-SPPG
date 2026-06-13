@@ -39,4 +39,9 @@ export class KelurahanService {
       features,
     };
   }
+
+  static async checkLocation(longitude: number, latitude: number) {
+    return withRetry(() => KelurahanRepository.checkLocation(longitude, latitude));
+  }
 }
+

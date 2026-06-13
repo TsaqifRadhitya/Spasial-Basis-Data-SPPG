@@ -16,6 +16,14 @@ export default function DeleteConfirmModal({
   handleDeleteSppg,
   handleDeleteSekolah,
 }: DeleteConfirmModalProps) {
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!deleteModal.isOpen) {
+      setIsDeleting(false);
+    }
+  }, [deleteModal.isOpen]);
+
   if (!deleteModal.isOpen) return null;
 
   return (
@@ -58,23 +66,44 @@ export default function DeleteConfirmModal({
 
         <div className="flex justify-end gap-2 text-xs font-bold pt-2 border-t border-[#1C322D]/10">
           <button
+            type="button"
+            disabled={isDeleting}
             onClick={() => setDeleteModal({ ...deleteModal, isOpen: false })}
-            className="px-4 py-2 border border-[#1C322D]/15 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer text-[#1C322D]/70 font-mono"
+            className="px-4 py-2 border border-[#1C322D]/15 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer text-[#1C322D]/70 font-mono disabled:opacity-50"
           >
             Batal
           </button>
           <button
+            type="button"
+            disabled={isDeleting}
             onClick={async () => {
-              setDeleteModal({ ...deleteModal, isOpen: false });
-              if (deleteModal.type === "sppg") {
-                await handleDeleteSppg(deleteModal.id);
-              } else {
-                await handleDeleteSekolah(deleteModal.id);
+              setIsDeleting(true);
+              try {
+                if (deleteModal.type === "sppg") {
+                  await handleDeleteSppg(deleteModal.id);
+                } else {
+                  await handleDeleteSekolah(deleteModal.id);
+                }
+                setDeleteModal({ ...deleteModal, isOpen: false });
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setIsDeleting(false);
               }
             }}
-            className="px-4 py-2 bg-[#E0533C] hover:bg-red-700 text-white rounded-xl transition-colors cursor-pointer font-mono"
+            className="px-4 py-2 bg-[#E0533C] hover:bg-red-700 text-white rounded-xl transition-colors cursor-pointer font-mono flex items-center justify-center gap-1.5 disabled:opacity-50 min-w-[90px]"
           >
-            Ya, Hapus
+            {isDeleting ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Hapus...
+              </>
+            ) : (
+              "Ya, Hapus"
+            )}
           </button>
         </div>
       </div>

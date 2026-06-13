@@ -15,5 +15,5 @@ export interface RekomendasiValidasiItem {
   kluster_id: number;
   nama_sekolah: string;
   jarak_meter: number;
-  status_validasi: "Terjangkau" | "Di luar jangkauan";
+  status_validasi: "Sangat Direkomendasikan" | "Terjangkau" | "Di luar jangkauan";
 }

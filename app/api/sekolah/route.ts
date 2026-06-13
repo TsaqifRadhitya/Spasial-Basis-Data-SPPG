@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { nama_sekolah, jenjang, alamat, nama_kelurahan, longitude, latitude } = body;
 
-    if (!nama_sekolah || !jenjang || !alamat || !nama_kelurahan || longitude === undefined || latitude === undefined) {
+    if (!nama_sekolah || !jenjang || !alamat || longitude === undefined || latitude === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -33,10 +33,11 @@ export async function POST(request: NextRequest) {
       nama_sekolah,
       jenjang,
       alamat,
-      nama_kelurahan,
+      nama_kelurahan: nama_kelurahan || '',
       longitude: parseFloat(longitude),
       latitude: parseFloat(latitude),
     });
+
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error: unknown) {

@@ -198,7 +198,7 @@ export class SekolahRepository {
         ST_X(s.geom) as lng, 
         ST_Y(s.geom) as lat, 
         s.id_sppg,
-        COALESCE(ST_Length(s.jalur_distribusi::geography), Infinity) as current_road_distance
+        COALESCE(ST_Length(s.jalur_distribusi::geography), 'infinity'::float) as current_road_distance
       FROM sekolah s
       WHERE ST_DWithin(s.geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, 6000)
     `, [newSppgLng, newSppgLat]);

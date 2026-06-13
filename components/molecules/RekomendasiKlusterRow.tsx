@@ -83,19 +83,29 @@ export default function RekomendasiKlusterRow({
               <div key={idx} className="flex justify-between items-center px-3 py-2 text-[11px]">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`w-1 h-1 rounded-full shrink-0 ${
-                      v.status_validasi === "Terjangkau" ? "bg-emerald-500" : "bg-[#E0533C]"
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      v.status_validasi === "Sangat Direkomendasikan"
+                        ? "bg-emerald-500"
+                        : v.status_validasi === "Terjangkau"
+                        ? "bg-[#EBB552]"
+                        : "bg-[#E0533C]"
                     }`}
                   />
                   <p className="font-semibold text-[#1C322D] font-sans leading-tight">{v.nama_sekolah}</p>
                 </div>
                 <div className="text-right shrink-0 ml-2">
                   <p className="font-bold font-mono text-[10px] text-[#1C322D]">{Math.round(v.jarak_meter)} m</p>
-                  {v.status_validasi !== "Terjangkau" && (
-                    <span
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border block mt-0.5 bg-[#F1CDBE] border-[#1C322D]/20 text-[#1C322D]"
-                    >
-                      {v.status_validasi}
+                  {v.status_validasi === "Sangat Direkomendasikan" ? (
+                    <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-emerald-50 border-emerald-300 text-emerald-800 text-center">
+                      Recommended
+                    </span>
+                  ) : v.status_validasi === "Terjangkau" ? (
+                    <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-amber-50 border-amber-300 text-amber-800 text-center">
+                      Terjangkau
+                    </span>
+                  ) : (
+                    <span className="text-[8px] font-bold px-1 rounded font-mono border block mt-0.5 bg-[#F1CDBE]/50 border-[#1C322D]/20 text-[#1C322D] text-center">
+                      Di luar jangkauan
                     </span>
                   )}
                 </div>
