@@ -356,7 +356,7 @@ export default function MapComponent({
                  <p class="font-semibold text-emerald-950 mt-0.5">${servingSppg.properties.nama}</p>
                </div>`
               : `<div class="mt-2 text-xs bg-[#F1CDBE]/30 text-[#1C322D] p-2 rounded-lg border border-[#F1CDBE]/50">
-                 <span class="font-bold">Status:</span> Belum terlayani SPPG (Blank Spot)
+                 <span class="font-bold">Status:</span> Belum terlayani SPPG
                </div>`;
 
             layer.bindPopup(`
@@ -364,7 +364,7 @@ export default function MapComponent({
               <div class="flex items-center gap-1.5">
                 <span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-white border border-[#1C322D]/20 text-slate-700">${props.jenjang}</span>
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isBlankSpot ? "bg-[#F1CDBE] text-[#1C322D]" : "bg-emerald-100 text-emerald-800"}">
-                  ${isBlankSpot ? "Blank Spot" : "Terlayani"}
+                  ${isBlankSpot ? "Tidak Terlayani" : "Terlayani"}
                 </span>
               </div>
               <h3 class="font-bold text-sm text-slate-900 mt-2">${props.nama}</h3>

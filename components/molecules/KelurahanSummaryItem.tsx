@@ -38,9 +38,9 @@ export default function KelurahanSummaryItem({ kelurahan: k, isSelected, onSelec
           className={`px-1.5 py-0.5 rounded font-bold ${
             isSelected ? "bg-[#F1CDBE] text-[#1C322D]" : "bg-[#F1CDBE] border border-[#1C322D]/15 text-[#1C322D]"
           }`}
-          title="Sekolah Blank Spot"
+          title="Sekolah Tidak Terlayani"
         >
-          BS: {k.blank_spot_count}
+          TT: {k.blank_spot_count}
         </span>
       </div>
     </button>

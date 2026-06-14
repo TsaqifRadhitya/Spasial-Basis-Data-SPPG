@@ -66,7 +66,7 @@ export default function CoverageTabPanel({ coverageStats }: CoverageTabPanelProp
                       : "bg-emerald-50 border-emerald-300 text-emerald-800"
                   }`}
                 >
-                  {item.status_cakupan}
+                  {item.status_cakupan === "Blank Spot" ? "Tidak Terlayani" : item.status_cakupan}
                 </span>
               </div>
             </div>

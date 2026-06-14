@@ -55,7 +55,7 @@ export default function RekomendasiKlusterRow({
               Kluster #{klusterId + 1}
             </p>
             <p className={`text-[10px] font-medium font-sans ${isSelected ? "text-white/70" : "text-slate-500"}`}>
-              {feature.properties.jumlah_sekolah} Sekolah Blank Spot
+              {feature.properties.jumlah_sekolah} Sekolah Tidak Terlayani
             </p>
           </div>
         </button>

@@ -28,7 +28,7 @@ export default function RekomendasiTabPanel({
           Perhitungan Sentroid
         </h3>
         <p className="text-xs text-[#1C322D]/80 font-serif mt-1">
-          Menghitung titik rekomendasi lokasi SPPG baru dengan mencari sentroid dari kluster sekolah blank spot.
+          Menghitung titik rekomendasi lokasi SPPG baru dengan mencari sentroid dari kluster sekolah tidak terlayani.
         </p>
         <button
           onClick={handleRecalculate}

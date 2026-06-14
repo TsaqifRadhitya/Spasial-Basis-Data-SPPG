@@ -180,7 +180,7 @@ export default function MapOverlayPanel({
                 <div className="p-2.5 bg-[#F1CDBE]/20 border border-[#F1CDBE]/40 rounded-xl space-y-1">
                   <div className="flex items-center gap-1.5 text-[#E0533C] font-bold">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#E0533C]"></span>
-                    <span>Blank Spot (Tidak Terlayani)</span>
+                    <span>Tidak Terlayani</span>
                   </div>
                   <p className="text-[#1C322D]/85 leading-snug text-[10px]">
                     Sekolah berada di luar radius mengemudi 6 km dari semua SPPG
@@ -427,7 +427,7 @@ export default function MapOverlayPanel({
           </div>
           <div className="p-2 bg-[#F1CDBE]/20 border border-[#F1CDBE]/40 rounded-xl flex flex-col justify-between">
             <span className="text-[8px] text-[#E0533C] font-bold uppercase font-mono leading-none">
-              Blank Spot
+              Tidak Terlayani
             </span>
             <p className="text-xs font-black text-[#E0533C] mt-1 font-mono">
               {kelProps.blank_spot_count}
@@ -518,7 +518,7 @@ export default function MapOverlayPanel({
                           : "bg-emerald-100 text-emerald-800"
                       }`}
                     >
-                      {isBlank ? "Blank Spot" : "Terlayani"}
+                      {isBlank ? "Tidak Terlayani" : "Terlayani"}
                     </span>
                   </div>
                 );
@@ -604,7 +604,7 @@ export default function MapOverlayPanel({
             <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
               <div className="p-2 bg-[#F8F3EE] rounded-xl border border-[#1C322D]/10 flex flex-col justify-between col-span-3">
                 <span className="text-[8px] text-[#1C322D]/60 font-bold uppercase font-mono leading-none">
-                  Total Sekolah Blank Spot
+                  Total Sekolah Tidak Terlayani
                 </span>
                 <p className="text-xs font-black text-[#1C322D] mt-1 font-mono">
                   {rekFeature.properties.jumlah_sekolah}

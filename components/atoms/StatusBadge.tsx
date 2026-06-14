@@ -29,7 +29,7 @@ export default function StatusBadge({ variant, label, className = "", selected =
   const cls = selected && v.selected ? v.selected : v.base;
   const defaultLabel =
     variant === "terlayani" ? "Terlayani" :
-    variant === "blank_spot" ? "Blank Spot" :
+    variant === "blank_spot" ? "Tidak Terlayani" :
     variant === "terjangkau" ? "Terjangkau" : "Di luar jangkauan";
 
   return (

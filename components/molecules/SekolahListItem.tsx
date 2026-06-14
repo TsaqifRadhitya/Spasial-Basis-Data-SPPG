@@ -34,14 +34,14 @@ export default function SekolahListItem({ feature: f, isSelected, onSelect, onDe
                   : "bg-[#F8F3EE] border border-[#1C322D]/10 text-[#1C322D]"
             }`}
           >
-            {isBlankSpot ? "Blank Spot" : "Terlayani"}
+            {isBlankSpot ? "Tidak Terlayani" : "Terlayani"}
           </span>
         </div>
         <p className={`font-serif ${isSelected ? "text-white/80" : "text-slate-600"}`}>{f.properties.alamat}</p>
         <div className={`flex justify-between text-[10px] pt-1 font-mono ${isSelected ? "text-white/70" : "text-[#1C322D]/70"}`}>
           <span>Kelurahan: {f.properties.kelurahan}</span>
           <span className={`${isSelected ? "text-[#EBB552]" : "text-[#8B5CF6]"} font-bold`}>
-            {isSelected ? "Terpilih - Rute Aktif" : isBlankSpot ? "Blank Spot" : "Klik untuk lihat rute ke SPPG"}
+            {isSelected ? "Terpilih - Rute Aktif" : isBlankSpot ? "Tidak Terlayani" : "Klik untuk lihat rute ke SPPG"}
           </span>
         </div>
       </button>
