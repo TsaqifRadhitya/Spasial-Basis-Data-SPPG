@@ -8,10 +8,10 @@ export class KelurahanRepository {
         k.nama_kelurahan,
         kec.nama_kecamatan,
         ST_AsGeoJSON(k.geom)::json AS geometry,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id) AS total_sekolah,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id AND s.id_sppg IS NOT NULL) AS terlayani_count,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id AND s.id_sppg IS NULL) AS blank_spot_count,
-        (SELECT COUNT(*) FROM sppg sp WHERE sp.id_kelurahan = k.id OR ST_Contains(k.geom, sp.geom)) AS sppg_count
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom)) AS total_sekolah,
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom) AND s.id_sppg IS NOT NULL) AS terlayani_count,
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom) AND s.id_sppg IS NULL) AS blank_spot_count,
+        (SELECT COUNT(*) FROM sppg sp WHERE ST_Contains(k.geom, sp.geom)) AS sppg_count
       FROM kelurahan k
       LEFT JOIN kecamatan kec ON k.id_kecamatan = kec.id
       WHERE LOWER(kec.nama_kecamatan) = 'sumbersari'
@@ -45,10 +45,10 @@ export class KelurahanRepository {
         'kelurahan' AS tipe,
         kec.nama_kecamatan AS kecamatan,
         ST_AsGeoJSON(k.geom)::json AS geometry,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id) AS total_sekolah,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id AND s.id_sppg IS NOT NULL) AS terlayani_count,
-        (SELECT COUNT(*) FROM sekolah s WHERE s.id_kelurahan = k.id AND s.id_sppg IS NULL) AS blank_spot_count,
-        (SELECT COUNT(*) FROM sppg sp WHERE sp.id_kelurahan = k.id OR ST_Contains(k.geom, sp.geom)) AS sppg_count
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom)) AS total_sekolah,
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom) AND s.id_sppg IS NOT NULL) AS terlayani_count,
+        (SELECT COUNT(*) FROM sekolah s WHERE ST_Contains(k.geom, s.geom) AND s.id_sppg IS NULL) AS blank_spot_count,
+        (SELECT COUNT(*) FROM sppg sp WHERE ST_Contains(k.geom, sp.geom)) AS sppg_count
       FROM kelurahan k
       LEFT JOIN kecamatan kec ON k.id_kecamatan = kec.id
       WHERE LOWER(kec.nama_kecamatan) = 'sumbersari'

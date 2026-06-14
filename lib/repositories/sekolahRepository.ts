@@ -19,7 +19,7 @@ export class SekolahRepository {
         ST_AsGeoJSON(s.jalur_distribusi)::json AS jalur_distribusi,
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude
       FROM sekolah s
-      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      LEFT JOIN kelurahan k ON ST_Contains(k.geom, s.geom)
     `;
     const params = [];
     if (kelurahan) {
@@ -38,7 +38,7 @@ export class SekolahRepository {
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
         COALESCE(ST_ClusterDBSCAN(s.geom, 0.054, 1) OVER (), 0) AS kluster_id
       FROM sekolah s
-      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      LEFT JOIN kelurahan k ON ST_Contains(k.geom, s.geom)
       WHERE s.id_sppg IS NULL
       ORDER BY kluster_id, s.id
     `);
@@ -146,7 +146,7 @@ export class SekolahRepository {
         ST_SetSRID(ST_MakePoint($5, $6), 4326)
       )
       RETURNING id, nama_satuan_pendidikan as nama_sekolah, jenjang, alamat, 
-        (SELECT nama_kelurahan FROM kelurahan WHERE id = id_kelurahan) as nama_kelurahan,
+        (SELECT k.nama_kelurahan FROM kelurahan k WHERE ST_Contains(k.geom, sekolah.geom) LIMIT 1) as nama_kelurahan,
         ST_X(geom) as longitude, ST_Y(geom) as latitude
     `, [sekolah.nama_sekolah, sekolah.jenjang, sekolah.alamat, sekolah.nama_kelurahan, sekolah.longitude, sekolah.latitude]);
 
@@ -164,7 +164,7 @@ export class SekolahRepository {
         ST_AsGeoJSON(s.jalur_distribusi)::json AS jalur_distribusi,
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude
       FROM sekolah s
-      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      LEFT JOIN kelurahan k ON ST_Contains(k.geom, s.geom)
       WHERE s.id = $1
     `, [newSchool.id]);
     return updated.rows[0];

@@ -16,7 +16,7 @@ export class SppgRepository {
         ST_X(s.geom) as longitude, ST_Y(s.geom) as latitude,
         k.nama_kelurahan AS kelurahan
       FROM sppg s
-      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      LEFT JOIN kelurahan k ON ST_Contains(k.geom, s.geom)
       ORDER BY s.id
     `);
     return res.rows;

@@ -36,7 +36,7 @@ export class CoverageRepository {
         END AS status_cakupan
       FROM sekolah s
       LEFT JOIN sppg sp ON s.id_sppg = sp.id
-      LEFT JOIN kelurahan k ON s.id_kelurahan = k.id
+      LEFT JOIN kelurahan k ON ST_Contains(k.geom, s.geom)
       ORDER BY s.nama_satuan_pendidikan
     `);
     return res.rows;
