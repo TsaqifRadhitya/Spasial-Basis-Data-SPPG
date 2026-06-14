@@ -32,6 +32,11 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/tsconfig.database.json ./
+COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/database ./database
+COPY --from=builder /app/seeds ./seeds
+COPY --from=builder /app/lib ./lib
 
 EXPOSE 3000
 
