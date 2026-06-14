@@ -1,8 +1,7 @@
-version: '3.8'
 
 services:
   db:
-    image: pgrouting/pgrouting:15-3.4-3.4.1
+    image: pgrouting/pgrouting:15-3.3-3.4.1
     container_name: sppg_gis_db_container
     restart: always
     environment:
